@@ -25,7 +25,8 @@
 
         {{-- Table --}}
         <div class="bg-white shadow rounded-lg overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+          @if(isset($userPermissions['Custommenulink']) && in_array('List', $userPermissions['Custommenulink']))  
+        <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
                 <thead class="bg-gray-100 text-left text-xs uppercase font-semibold text-gray-600">
                     <tr>
                         <th class="px-6 py-3">Title</th>
@@ -50,8 +51,10 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 @if(isset($userPermissions['Custommenulink']) && in_array('Edit', $userPermissions['Custommenulink']))
-                                    <button class="text-blue-600 hover:underline"
-                                        @click="openEdit = true; editData = {{ json_encode($link) }}">Edit</button>
+                                    <button class="text-white bg-blue-600 px-3 py-1 rounde hover:underline"
+                                        @click="openEdit = true; editData = {{ json_encode($link) }}">
+                                     <i class="far fa-edit" style="font-size:14px"></i>
+                                    </button>
                                 @endif
                                 @if(isset($userPermissions['Custommenulink']) && in_array('Delete', $userPermissions['Custommenulink']))
                                     <form action="{{ route('admin.custom-menu-links.destroy', $link->id) }}" method="POST"
@@ -73,7 +76,7 @@
                 </tbody>
             </table>
         </div>
-
+        @endif 
         <!-- Add Modal -->
         <div x-show="open" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div @click.away="open = false" class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">

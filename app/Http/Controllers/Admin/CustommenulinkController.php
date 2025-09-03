@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-
 use App\Http\Controllers\Controller;
 use App\Models\CustomMenuLink;
+use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Http\Request;
 
@@ -54,6 +54,26 @@ class CustommenulinkController extends Controller
         $link = CustomMenuLink::findOrFail($id);
         $link->delete();
         return redirect()->back()->with('success', 'Delete Successfully');
+    }
+    public function getapi_Custommenulink($email)
+    {
+        // Step 1: Check user by email
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email not authorized for announcements',
+            ], 403);
+        }
+
+        // Step 2: Fetch all CustomMenuLinks
+        $customMenuLinks = CustomMenuLink::all();
+
+        return response()->json([
+            'success' => true,
+            'data' => $customMenuLinks
+        ]);
     }
 
 

@@ -138,6 +138,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         Route::get('/locationcustomizer/index', [LocationcustomizerController::class, 'index'])->name('locationcustomizer.index');
         Route::post('/location_customizer/toggle', [LocationCustomizerController::class, 'toggleEnable'])
             ->name('location_customizer.toggle');
+        Route::delete('delete/{id}',[LocationcustomizerController::class,'destroy'])->name('loc_custom.destroy');
         // customcss 
         // Fetch CSS for modal
         Route::get('custom_css/{locationId}', [LocationcustomizerController::class, 'editCSS'])->name('custom_css.edit');

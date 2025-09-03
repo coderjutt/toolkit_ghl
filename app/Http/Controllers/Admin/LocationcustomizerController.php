@@ -53,7 +53,11 @@ class LocationcustomizerController extends Controller
         return redirect()->back()->with('success', 'Location updated successfully.');
     }
 
-
+    public function destroy($id){
+        $location= LocationCustomizer::findOrFail($id);
+        $location->delete();
+        return redirect()->back()->with('success','Delete successfully');
+    }
     public function toggleEnable(Request $request)
     {
         $location = LocationCustomizer::findOrFail($request->id);
