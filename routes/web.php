@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-  // dd('hay');
+    // dd('hay');
     if (Auth::check()) {
         $user = Auth::user();
         if ($user->role == 1 || $user->role == 2) {
@@ -143,7 +143,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         Route::get('custom_css/{locationId}', [LocationcustomizerController::class, 'editCSS'])->name('custom_css.edit');
         // Update CSS
         Route::post('custom_css/{locationId}', [LocationcustomizerController::class, 'updateCSS'])->name('custom_css.update');
-
+        Route::resource('custom-menu-links', CustomMenuLinkController::class);
         Route::get('/translation/index', [TranslationController::class, 'index'])->name('translation.index');
         Route::get('/location/index', [LocationController::class, 'index'])->name('location.index');
         Route::get('/user/index', [UserController::class, 'index'])->name('user.index');

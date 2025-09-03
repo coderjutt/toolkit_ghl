@@ -5,10 +5,12 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">Users Module</h1>
             <!-- Add Location Button -->
-            <button onclick="document.getElementById('locationModal').classList.remove('hidden')"
-                class="bg-blue-600 text-white px-4 py-2 rounded">
-                Add Location
-            </button>
+            @if(isset($userPermissions['Locationcustomizer']) && in_array('Add', $userPermissions['Locationcustomizer']))
+                <button onclick="document.getElementById('locationModal').classList.remove('hidden')"
+                    class="bg-blue-600 text-white px-4 py-2 rounded">
+                    Add Location
+                </button>
+            @endif
         </div>
 
         {{-- Location Table --}}
@@ -34,14 +36,16 @@
                                 <!-- Custom CSS Button -->
                                 <button onclick="openCustomCssModal({{ $locCustom->id }})"
                                     class="bg-yellow-400 text-white px-3 py-1 rounded">Custom CSS</button>
-
-                                <!-- Edit Button -->
-                                <button onclick="openEditModal({{ $locCustom->id }})"
-                                    class="bg-blue-500 text-white px-3 py-1 rounded">Edit</button>
-
+                                @if(isset($userPermissions['Locationcustomizer']) && in_array('Edit', $userPermissions['Locationcustomizer']))
+                                    <!-- Edit Button -->
+                                    <button onclick="openEditModal({{ $locCustom->id }})"
+                                        class="bg-blue-500 text-white px-3 py-1 rounded">Edit</button>
+                                @endif
                                 <!-- Delete Button -->
-                                <button onclick="deleteLocation({{ $locCustom->id }})"
-                                    class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                                @if(isset($userPermissions['Locationcustomizer']) && in_array('Delete', $userPermissions['Locationcustomizer']))
+                                    <button onclick="deleteLocation({{ $locCustom->id }})"
+                                        class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomCss;
 use App\Models\LocationCustomizer;
 use App\Models\User;
+use App\Models\UserPermission;
 use Illuminate\Http\Request;
 
 class LocationcustomizerController extends Controller
@@ -13,7 +14,14 @@ class LocationcustomizerController extends Controller
     public function index()
     {
         $locationcustomizer = LocationCustomizer::all();
-        return view('admin.locationcustomizer.index', compact('locationcustomizer'));
+         $userPermissions = UserPermission::where('user_id', auth()->id())
+            ->get()
+            ->groupBy('module')
+            ->map(function ($rows) {
+                return $rows->pluck('permission')->unique()->toArray();
+            })
+            ->toArray();
+        return view('admin.locationcustomizer.index', compact('locationcustomizer','userPermissions'));
     }
 
     public function store(Request $request)
