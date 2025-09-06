@@ -108,7 +108,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         Route::get('/announcement/index', [AnnouncementController::class, 'index'])->name('announcement.index');
         Route::get('/announcement/create', [AnnouncementController::class, 'create'])->name('announcement.create');
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
-        Route::delete('delete/{id}', [AnnouncementController::class, 'destroy'])->name('destroy.announcement');
+        Route::delete('announcements/{id}', [AnnouncementController::class, 'destroy'])->name('destroy.announcement');
         Route::put('announcements/{id}', [AnnouncementController::class, 'update'])->name('announcement.update');
 
         Route::post('announcements/save-settings', [AnnouncementController::class, 'save_settings'])->name('announcement.save_settings');
@@ -125,13 +125,13 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         Route::get('/custom-values/{id}/edit', [CustomValueController::class, 'edit'])->name('customvalue.edit'); // :point_left: NEW
         Route::put('/custom-values/{id}', [CustomValueController::class, 'update'])->name('customvalue.update');
         Route::delete('/custom-values/{id}', [CustomValueController::class, 'destroy'])->name('customvalue.destroy');
-        // contact addons
-        Route::get('/contacts', [ContactsController::class, 'index'])->name('contacts.index');
-        Route::get('/contacts/create', [ContactsController::class, 'create'])->name('contacts.create');
-        Route::post('contacts', [ContactsController::class, 'store'])->name('contacts.store');
-        Route::get('/contacts/{id}/edit', [ContactsController::class, 'edit'])->name('contacts.edit');
-        Route::put('/contacts/{id}', [ContactsController::class, 'update'])->name('contacts.update');
-        Route::delete('/contacts/{id}', [ContactsController::class, 'destroy'])->name('contacts.destroy');
+        // contactbuttons addons
+        Route::get('/contactsbtn', [ContactbuttonController::class, 'index'])->name('contacts.index');
+        Route::get('/contacts/create', [ContactbuttonController::class, 'create'])->name('contacts.create');
+        Route::post('contactsbutton', [ContactbuttonController::class, 'store'])->name('contacts.store');
+        Route::get('/contactsbutton/{id}/edit', [ContactbuttonController::class, 'edit'])->name('contacts.edit');
+        Route::put('/contactsbutton/{id}', [ContactbuttonController::class, 'update'])->name('contacts.update');
+        Route::delete('/contactsbutton/{id}', [ContactbuttonController::class, 'destroy'])->name('contacts.destroy');
 
         // LocationCustomizer
         Route::post('/store', [LocationCustomizerController::class, 'store'])->name('location_customizer.store');

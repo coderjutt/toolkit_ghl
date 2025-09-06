@@ -12,12 +12,13 @@ class CustomCss extends Model
     protected $fillable = [
         'location_customizer_id',
         'live_privew',
-        'card_header_background',
+        'form_css',
         'card_header_color',
         'top_header_icon_background',
         'top_header_icon_color',
         'navebar_background',
         'navebar_color',
+        'form_css',
         'navebar_grouped_background',
         'navebar_grouped_color',
         'navebar_item_active_background',
@@ -29,7 +30,9 @@ class CustomCss extends Model
         'item_border_radius',
         'custom_css',
     ];
-
+    protected $casts=[
+    'form_css'=>'array',
+    ];
     public function locationCustomizer()
     {
         return $this->belongsTo(LocationCustomizer::class);

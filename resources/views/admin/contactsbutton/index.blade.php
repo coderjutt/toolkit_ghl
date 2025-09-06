@@ -4,7 +4,7 @@
     <div x-data="{ openCreate:false, openEdit:null, openDelete:null }" class="p-6">
 
         <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-2xl font-bold mb-6 text-center">📇 Contacts</h2>
+            <h2 class="text-2xl font-bold mb-6 text-center">📇 Contacts Button</h2>
 
             <!-- Success Message -->
             @if(session('success'))
@@ -14,16 +14,16 @@
             @endif
 
             <!-- Add Button -->
-            @if(isset($userPermissions['contacts']) && in_array('Add', $userPermissions['contacts']))
+            @if(isset($userPermissions['Contactbutton']) && in_array('Add', $userPermissions['Contactbutton']))
                 <div class="text-end mb-4">
                     <button @click="openCreate = true" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        + Add Contact Button 
+                        + Add Contact Button
                     </button>
                 </div>
             @endif
             <!-- Table -->
             <div class="overflow-x-auto">
-                @if(isset($userPermissions['contacts']) && in_array('List', $userPermissions['contacts']))
+                @if(isset($userPermissions['Contactbutton']) && in_array('List', $userPermissions['Contactbutton']))
                         <table class="w-full border">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -62,29 +62,31 @@
                                             <div class="w-6 h-6 mx-auto rounded" style="background: {{ $c->background }}"></div>
                                         </td>
                                         <td class="border px-2 py-1 flex justify-center gap-2">
-                                            @if(isset($userPermissions['contacts']) && in_array('Edit', $userPermissions['contacts']))
+                                            @if(isset($userPermissions['Contactbutton']) && in_array('Edit', $userPermissions['Contactbutton']))
                                                 <button @click="openEdit={{ $c->id }}"
                                                     class="px-3 py-1 bg-yellow-400 text-white rounded">✏️</button>
                                             @endif
-                                            @if(isset($userPermissions['contacts']) && in_array('Delete', $userPermissions['contacts']))
+                                            @if(isset($userPermissions['Contactbutton']) && in_array('Delete', $userPermissions['Contactbutton']))
                                                 <button @click="openDelete={{ $c->id }}"
                                                     class="px-3 py-1 bg-red-500 text-white rounded">🗑️</button>
                                             @endif
                                         </td>
                                     </tr>
 
-                                    <!-- Edit Modal -->
+                                 
 
+                                    <!-- Edit Modal -->
                                     <div x-show="openEdit==={{ $c->id }}" x-cloak
                                         class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                                         <div class="bg-white p-6 rounded-lg w-full max-w-lg" @click.away="openEdit=null">
                                             <h3 class="text-lg font-bold mb-4">✏️ Edit Contact</h3>
                                             <form method="POST" action="{{ route('admin.contacts.update', $c->id) }}">
                                                 @csrf @method('PUT')
-                                                @include('admin.contacts.partials.form', ['contact' => $c])
+                                                @include('admin.contactsbutton.partials.form', ['contact' => $c, 'editMode' => true])
                                             </form>
                                         </div>
                                     </div>
+
 
 
                                     <!-- Delete Modal -->
@@ -123,12 +125,13 @@
         <!-- Create Modal -->
         <div x-show="openCreate" x-cloak class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
             <div class="bg-white p-6 rounded-lg w-full max-w-lg" @click.away="openCreate=false">
-                <h3 class="text-lg font-bold mb-4">➕ Add Contact Button </h3>
+                <h3 class="text-lg font-bold mb-4">➕ Add Contact Button</h3>
                 <form method="POST" action="{{ route('admin.contacts.store') }}">
                     @csrf
-                    @include('admin.contacts.partials.form')
+                    @include('admin.contactsbutton.partials.form', ['editMode' => false])
                 </form>
             </div>
         </div>
+
     </div>
 @endsection

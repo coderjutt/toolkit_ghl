@@ -64,7 +64,7 @@
                                     <h3 class="text-lg font-bold mb-4">✏️ Edit Contact</h3>
                                     <form method="POST" action="{{ route('admin.api.contacts.update', $c->id) }}">
                                         @csrf @method('PUT')
-                                        @include('admin.contacts.partials.form', ['contact' => $c])
+                                        @include('admin.contactsbutton.partials.form', ['contact' => $c])
                                     </form>
                                 </div>
                             </div>
@@ -105,7 +105,7 @@
                 <h3 class="text-lg font-bold mb-4">➕ Add Contact</h3>
                 <form method="POST" action="{{ route('admin.api.contacts.store') }}">
                     @csrf
-                    @include('admin.contacts.partials.form')
+                    @include('admin.contactsbutton.partials.form')
                 </form>
             </div>
         </div>

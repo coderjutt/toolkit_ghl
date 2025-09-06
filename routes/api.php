@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ContactbuttonController;
 use App\Http\Controllers\Admin\CustommenulinkController;
 use App\Http\Controllers\Admin\LocationcustomizerController;
 use App\Http\Controllers\api\AnnouncementController;
@@ -25,8 +26,8 @@ Route::post('/announcements/viewed', [AnnouncementController::class, 'markAsView
 Route::post('/announcements/globel', [AnnouncementController::class, 'storeGlobalViewAnnouncements']);
 Route::get('location-customizer/{email}', [LocationcustomizerController::class, 'getApiLocationCustomizer']);
 // CustomCss
-Route::post('custom_css/{email}/{locationId}/{ghl_location_id}', [LocationcustomizerController::class, 'updateCSS'])->name('custom_css.update');
+Route::post('custom_css/{email}/{locationId}/{ghl_location_id}', [LocationcustomizerController::class, 'updateCSSapi'])->name('custom_css.update');
 Route::get('custom_css/{email}/{locationId}/{ghl_location_id}',[LocationcustomizerController::class, 'getCSS'])->name('custom_css.get');
 Route::get('custommenulink/{email}',[CustommenulinkController::class,'getapi_Custommenulink']);
 Route::get('/custom-values', [CustomValueController::class, 'apiIndex']); // no middleware
-Route::get('/contacts', [ContactsController::class, 'apiIndex']); // no middleware
+Route::get('/contacts', [ContactbuttonController::class, 'apiIndex']); // no middleware

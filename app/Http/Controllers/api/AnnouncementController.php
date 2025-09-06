@@ -11,8 +11,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Announcement;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Mail;
-use Log;
+// use Log;
 use Str;
 
 class AnnouncementController extends Controller
@@ -468,6 +471,459 @@ class AnnouncementController extends Controller
     //     return response()->json($announcements);
     // }
 
+    // public function getAnnouncements(Request $request)
+    // {
+    //     header("Access-Control-Allow-Origin: *");
+    //     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    //     header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+    //     $userEmail = $request->query('email') ?? null;
+    //     $superAdminEmail = $request->query('superadminemail') ?? null;
+    //     $requestedAudienceType = $request->query('audience_type') ?? null;
+    //     // $announcementId = $data['announcement_id'];
+    //     $now = Carbon::now();
+
+    //     // Authorization check
+    //     $matched = Announcement::whereNotNull('user_id')
+    //         ->get()
+    //         ->contains(function ($announcement) use ($userEmail, $superAdminEmail) {
+    //             $user = User::find($announcement->user_id);
+    //             if (!$user)
+    //                 return false;
+
+    //             $dbEmail = strtolower($user->email);
+    //             return (!empty($superAdminEmail) && strtolower($superAdminEmail) === $dbEmail)
+    //                 || (!empty($userEmail) && strtolower($userEmail) === $dbEmail);
+    //         });
+
+    //     if (!$matched) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Email not authorized for announcements'
+    //         ], 403);
+    //     }
+
+    //     // Fetch active announcements
+    //     $announcements = Announcement::where('status', 'active')
+    //         ->where(function ($query) use ($now) {
+    //             $query->where('expiry_type', 'never')
+    //                 ->orWhere(function ($q) use ($now) {
+    //                     $q->where('expiry_type', 'date')->where('expiry_date', '>=', $now);
+    //                 });
+    //         })
+    //         ->get();
+
+    //     // Map emails and locations
+    //     $announcements->transform(function ($announcement) {
+    //         $locationsRaw = $announcement->locations;
+    //         if (is_string($locationsRaw))
+    //             $locations = json_decode($locationsRaw, true);
+    //         elseif (is_array($locationsRaw))
+    //             $locations = $locationsRaw;
+    //         elseif (is_object($locationsRaw))
+    //             $locations = (array) $locationsRaw;
+    //         else
+    //             $locations = [];
+
+    //         $allowed_by_emails = [];
+    //         $allowed_location_ids = [];
+    //         foreach ($locations as $loc) {
+    //             if (!empty($loc['email'])) {
+    //                 $emails = array_map('trim', explode(',', $loc['email']));
+    //                 $allowed_by_emails = array_merge($allowed_by_emails, $emails);
+    //             }
+    //             if (!empty($loc['location_id']))
+    //                 $allowed_location_ids[] = $loc['location_id'];
+    //         }
+
+    //         $announcement->allowed_by_email = $allowed_by_emails;
+    //         $announcement->locations_id = $allowed_location_ids;
+
+    //         return $announcement;
+    //     });
+
+    //     // Filter announcements based on audience_type (all / specific)
+    //     $announcements = $announcements->filter(function ($announcement) use ($userEmail, $superAdminEmail) {
+    //         if ($announcement->audience_type === 'all')
+    //             return true;
+
+    //         if ($announcement->audience_type === 'specific') {
+    //             $emails = array_map('strtolower', $announcement->allowed_by_email);
+
+    //             return (!empty($userEmail) && in_array(strtolower($userEmail), $emails))
+    //                 || (!empty($superAdminEmail) && in_array(strtolower($superAdminEmail), $emails));
+    //         }
+
+    //         return false;
+    //     });
+
+    //     // -----------------------------
+    //     // Separate filters for global and per-announcement
+    //     // -----------------------------
+
+    //     $globalSettings = AnnouncementSetting::first();
+    //     $globalSettingsArray = $globalSettings->settings ?? [];
+
+    //     $filtered = $announcements->filter(function ($announcement) use ($userEmail, $requestedAudienceType, $globalSettingsArray) {
+
+    //         $include = true;
+    //         $settings = is_string($announcement->settings)
+    //             ? json_decode($announcement->settings, true)
+    //             : ($announcement->settings ?? []);
+
+    //         // 🔹 Apply GLOBAL settings if enabled
+    //         if (!empty($settings['general_settings'])) {
+
+    //             // Audience type filter
+    //             $allowedTypes = $globalSettingsArray['audience']['types'] ?? [];
+    //             if ($requestedAudienceType && !in_array($requestedAudienceType, $allowedTypes)) {
+    //                 return false;
+    //             }
+
+    //             // Frequency & conditions
+    //             $freq = $globalSettingsArray['frequency'] ?? [];
+    //             $conditions = $globalSettingsArray['conditions'] ?? [];
+
+    //             // Fetch or create global view record
+    //             $view = GlobaViewAnnouncements::firstOrCreate(
+    //                 [
+    //                     'announcement_id' => $announcement->id,
+    //                     'user_email' => $userEmail,
+    //                 ],
+    //                 [
+    //                     'frequency' => [],
+    //                     'conditions' => ['current_views' => 0, 'never_show' => false, 'never_stop' => false],
+    //                 ]
+    //             );
+
+    //             $userConditions = $view->conditions ?? [];
+    //             $userViews = $userConditions['current_views'] ?? 0;
+    //             $frequencyLogs = $view->frequency ?? [];
+
+    //             // Frequency check
+    //             $frequencyRule = $freq['type'] ?? 'every_page';
+    //             $gap = $freq['gap'] ?? null;
+
+    //             if (!$this->canShowAnnouncement($frequencyRule, $frequencyLogs, $gap)) {
+    //                 return false;
+    //             }
+
+    //             // User ke record ke conditions nikaalo
+    //             $userConditions = $view ? ($view->conditions ?? []) : [];
+    //             $userViews = $userConditions['current_views'] ?? 0;
+    //             $neverStop = $userConditions['never_stop'] ?? false;
+    //             $neverShow = $userConditions['never_show'] ?? false;
+
+    //             // Global / announcement settings
+    //             $stop = $conditions['stop'] ?? null;
+    //             $allowedViews = (int) ($conditions['views'] ?? 1);
+
+    //             // --- Stop conditions check ---
+    //             if ($neverStop === true) {
+    //                 // agar once reached max views -> hamesha band
+    //                 $include = false;
+    //             }
+
+    //             if ($stop === 'never_show_again' && $neverShow === true) {
+    //                 $include = false;
+    //             }
+
+    //             if ($stop === 'after_views' && $userViews >= $allowedViews) {
+    //                 $include = false;
+    //             }
+    //         }
+
+    //         // 🔹 Apply PER ANNOUNCEMENT settings
+    //         $allowedTypes = $settings['audience_types'] ?? [];
+    //         if ($requestedAudienceType && !empty($allowedTypes) && !in_array($requestedAudienceType, $allowedTypes)) {
+    //             return false;
+    //         }
+
+    //         $freq = $settings['frequency'] ?? [];
+    //         $mode = $freq['mode'] ?? ($freq['type'] ?? null);
+    //         $unit = $freq['unit'] ?? null;
+    //         $value = (int) ($freq['value'] ?? 0);
+
+    //         $view = AnnouncementView::where('announcement_id', $announcement->id)
+    //             ->where('email', $userEmail)
+    //             ->latest()
+    //             ->first();
+
+    //         if ($view && $mode !== 'every_page' && $unit && $value > 0) {
+    //             $nextAllowed = Carbon::parse($view->updated_at)->add($unit, $value);
+    //             if (Carbon::now()->lessThan($nextAllowed)) {
+    //                 return false;
+    //             }
+    //         }
+
+    //         // Stop condition per announcement
+    //         if (Str::startsWith($announcement->display_setting, 'stop_after_')) {
+    //             preg_match('/stop_after_(\d+)_view/', $announcement->display_setting, $matches);
+    //             $allowed = $matches[1] ?? 1;
+    //             $views = $view ? $view->views : 0;
+
+    //             if ($views >= $allowed) {
+    //                 return false;
+    //             }
+    //         }
+
+    //         return $include;
+    //     })->values();
+
+
+
+    //     // Email sending logic
+    //     foreach ($filtered as $announcement) {
+    //         if ($announcement->allow_email && !$announcement->send_email) {
+    //             $mailSettingsList = AnnouncementEmailSetting::all();
+    //             foreach ($mailSettingsList as $mailSettings) {
+    //                 if (!$mailSettings->from_email)
+    //                     continue;
+    //                 try {
+    //                     Mail::to($mailSettings->from_email)
+    //                         ->send(new \App\Mail\AnnouncementMail($announcement));
+    //                 } catch (\Exception $e) {
+    //                     Log::error("❌ Announcement email error: " . $e->getMessage());
+    //                 }
+    //             }
+    //             Announcement::query()->update(['send_email' => 1]);
+    //         }
+    //     }
+
+    //     return response()->json($filtered);
+    // }
+
+
+    // public function getAnnouncements(Request $request)
+    // {
+    //     header("Access-Control-Allow-Origin: *");
+    //     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    //     header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+    //     $userEmail = $request->query('email') ?? null;
+    //     $superAdminEmail = $request->query('superadminemail') ?? null;
+    //     $requestedAudienceType = $request->query('audience_type') ?? null;
+    //     $now = Carbon::now();
+
+    //     // -------------------------------
+    //     // Authorization check
+    //     // -------------------------------
+    //     $matched = Announcement::whereNotNull('user_id')
+    //         ->get()
+    //         ->contains(function ($announcement) use ($userEmail, $superAdminEmail) {
+    //             $user = User::find($announcement->user_id);
+    //             if (!$user)
+    //                 return false;
+
+    //             $dbEmail = strtolower($user->email);
+    //             return (!empty($superAdminEmail) && strtolower($superAdminEmail) === $dbEmail)
+    //                 || (!empty($userEmail) && strtolower($userEmail) === $dbEmail);
+    //         });
+
+    //     if (!$matched) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Email not authorized for announcements'
+    //         ], 403);
+    //     }
+
+    //     // -------------------------------
+    //     // Fetch active announcements
+    //     // -------------------------------
+    //     $announcements = Announcement::where('status', 'active')
+    //         ->where(function ($query) use ($now) {
+    //             $query->where('expiry_type', 'never')
+    //                 ->orWhere(function ($q) use ($now) {
+    //                     $q->where('expiry_type', 'date')->where('expiry_date', '>=', $now);
+    //                 });
+    //         })
+    //         ->get();
+
+    //     // -------------------------------
+    //     // Map allowed emails & locations
+    //     // -------------------------------
+    //     $announcements->transform(function ($announcement) {
+    //         $locationsRaw = $announcement->locations;
+    //         if (is_string($locationsRaw)) {
+    //             $locations = json_decode($locationsRaw, true);
+    //         } elseif (is_array($locationsRaw)) {
+    //             $locations = $locationsRaw;
+    //         } elseif (is_object($locationsRaw)) {
+    //             $locations = (array) $locationsRaw;
+    //         } else {
+    //             $locations = [];
+    //         }
+
+    //         $allowed_by_emails = [];
+    //         $allowed_location_ids = [];
+    //         foreach ($locations as $loc) {
+    //             if (!empty($loc['email'])) {
+    //                 $emails = array_map('trim', explode(',', $loc['email']));
+    //                 $allowed_by_emails = array_merge($allowed_by_emails, $emails);
+    //             }
+    //             if (!empty($loc['location_id']))
+    //                 $allowed_location_ids[] = $loc['location_id'];
+    //         }
+
+    //         $announcement->allowed_by_email = $allowed_by_emails;
+    //         $announcement->locations_id = $allowed_location_ids;
+
+    //         return $announcement;
+    //     });
+
+    //     // -------------------------------
+    //     // Filter by audience_type
+    //     // -------------------------------
+    //     $announcements = $announcements->filter(function ($announcement) use ($userEmail, $superAdminEmail) {
+    //         if ($announcement->audience_type === 'all')
+    //             return true;
+
+    //         if ($announcement->audience_type === 'specific') {
+    //             $emails = array_map('strtolower', $announcement->allowed_by_email);
+    //             return (!empty($userEmail) && in_array(strtolower($userEmail), $emails))
+    //                 || (!empty($superAdminEmail) && in_array(strtolower($superAdminEmail), $emails));
+    //         }
+    //         return false;
+    //     });
+
+    //     // -------------------------------
+    //     // Global settings load
+    //     // -------------------------------
+    //     $globalSettings = AnnouncementSetting::first();
+    //     $globalSettingsArray = $globalSettings
+    //         ? (is_string($globalSettings->settings)
+    //             ? json_decode($globalSettings->settings, true)
+    //             : ($globalSettings->settings ?? []))
+    //         : [];
+
+    //     // -------------------------------
+    //     // Final filter (global + per-announcement)
+    //     // -------------------------------
+    //     $filtered = $announcements->filter(function ($announcement) use ($userEmail, $requestedAudienceType, $globalSettingsArray) {
+
+    //         $settings = is_string($announcement->settings)
+    //             ? json_decode($announcement->settings, true)
+    //             : ($announcement->settings ?? []);
+
+    //         // ==================================================
+    //         // ✅ Global settings
+    //         // ==================================================
+    //         if (!empty($settings['general_settings'])) {
+
+    //             // Audience type filter
+    //             $allowedTypes = $globalSettingsArray['audience']['types'] ?? [];
+    //             if ($requestedAudienceType && !in_array($requestedAudienceType, $allowedTypes)) {
+    //                 return false;
+    //             }
+
+    //             // Frequency & conditions
+    //             $freq = $globalSettingsArray['frequency'] ?? [];
+    //             $conditions = $globalSettingsArray['conditions'] ?? [];
+
+    //             $view = GlobaViewAnnouncements::firstOrCreate(
+    //                 [
+    //                     'announcement_id' => $announcement->id,
+    //                     'user_email' => $userEmail,
+    //                 ],
+    //                 [
+    //                     'frequency' => [],
+    //                     'conditions' => [
+    //                         'current_views' => 0,
+    //                         'never_show' => false,
+    //                         'never_stop' => false
+    //                     ],
+    //                 ]
+    //             );
+
+    //             $userConditions = $view->conditions ?? [];
+    //             $userViews = $userConditions['current_views'] ?? 0;
+    //             $frequencyLogs = $view->frequency ?? [];
+
+    //             // Frequency check
+    //             $frequencyRule = $freq['type'] ?? 'every_page';
+    //             $gap = $freq['gap'] ?? null;
+    //             if (!$this->canShowAnnouncement($frequencyRule, $frequencyLogs, $gap)) {
+    //                 return false;
+    //             }
+
+    //             // Stop conditions
+    //             $neverStop = $userConditions['never_stop'] ?? false;
+    //             $neverShow = $userConditions['never_show'] ?? false;
+    //             $stop = $conditions['stop'] ?? null;
+    //             $allowedViews = (int) ($conditions['views'] ?? 1);
+
+    //             if ($neverStop === true)
+    //                 return false;
+    //             if ($stop === 'never_show_again' && $neverShow === true)
+    //                 return false;
+    //             if ($stop === 'after_views' && $userViews >= $allowedViews)
+    //                 return false;
+
+    //             // ✅ Only global apply, skip per-announcement
+    //             return true;
+    //         }
+
+    //         // ==================================================
+    //         // ✅ Per announcement settings
+    //         // ==================================================
+    //         $allowedTypes = $settings['audience_types'] ?? [];
+    //         if ($requestedAudienceType && !empty($allowedTypes) && !in_array($requestedAudienceType, $allowedTypes)) {
+    //             return false;
+    //         }
+
+    //         $freq = $settings['frequency'] ?? [];
+    //         $mode = $freq['mode'] ?? ($freq['type'] ?? null);
+    //         $unit = $freq['unit'] ?? null;
+    //         $value = (int) ($freq['value'] ?? 0);
+
+    //         $view = AnnouncementView::where('announcement_id', $announcement->id)
+    //             ->where('email', $userEmail)
+    //             ->latest()
+    //             ->first();
+
+    //         if ($view && $mode !== 'every_page' && $unit && $value > 0) {
+    //             $nextAllowed = Carbon::parse($view->updated_at)->add($unit, $value);
+    //             if (Carbon::now()->lessThan($nextAllowed)) {
+    //                 return false;
+    //             }
+    //         }
+
+    //         // Stop condition per announcement
+    //         if (Str::startsWith($announcement->display_setting, 'stop_after_')) {
+    //             preg_match('/stop_after_(\d+)_view/', $announcement->display_setting, $matches);
+    //             $allowed = $matches[1] ?? 1;
+    //             $views = $view ? $view->views : 0;
+
+    //             if ($views >= $allowed)
+    //                 return false;
+    //         }
+
+    //         return true;
+    //     })->values();
+
+    //     // -------------------------------
+    //     // Email sending logic
+    //     // -------------------------------
+    //     foreach ($filtered as $announcement) {
+    //         if ($announcement->allow_email && !$announcement->send_email) {
+    //             $mailSettingsList = AnnouncementEmailSetting::all();
+    //             foreach ($mailSettingsList as $mailSettings) {
+    //                 if (!$mailSettings->from_email)
+    //                     continue;
+    //                 try {
+    //                     Mail::to($mailSettings->from_email)
+    //                         ->send(new \App\Mail\AnnouncementMail($announcement));
+    //                 } catch (\Exception $e) {
+    //                     Log::error("❌ Announcement email error: " . $e->getMessage());
+    //                 }
+    //             }
+    //             $announcement->update(['send_email' => 1]); // ✅ Only update this one
+    //         }
+    //     }
+
+    //     return response()->json($filtered);
+    // }
+
     public function getAnnouncements(Request $request)
     {
         header("Access-Control-Allow-Origin: *");
@@ -477,10 +933,11 @@ class AnnouncementController extends Controller
         $userEmail = $request->query('email') ?? null;
         $superAdminEmail = $request->query('superadminemail') ?? null;
         $requestedAudienceType = $request->query('audience_type') ?? null;
-        // $announcementId = $data['announcement_id'];
         $now = Carbon::now();
 
-        // Authorization check
+        // -----------------------------------------------------
+        // 1. Super Admin Email Check
+        // -----------------------------------------------------
         $matched = Announcement::whereNotNull('user_id')
             ->get()
             ->contains(function ($announcement) use ($userEmail, $superAdminEmail) {
@@ -500,7 +957,9 @@ class AnnouncementController extends Controller
             ], 403);
         }
 
-        // Fetch active announcements
+        // -----------------------------------------------------
+        // 2. Fetch Active Announcements
+        // -----------------------------------------------------
         $announcements = Announcement::where('status', 'active')
             ->where(function ($query) use ($now) {
                 $query->where('expiry_type', 'never')
@@ -510,156 +969,170 @@ class AnnouncementController extends Controller
             })
             ->get();
 
-        // Map emails and locations
+        // -----------------------------------------------------
+        // 3. Map allowed emails & locations
+        // -----------------------------------------------------
         $announcements->transform(function ($announcement) {
             $locationsRaw = $announcement->locations;
-            if (is_string($locationsRaw))
-                $locations = json_decode($locationsRaw, true);
-            elseif (is_array($locationsRaw))
-                $locations = $locationsRaw;
-            elseif (is_object($locationsRaw))
-                $locations = (array) $locationsRaw;
-            else
-                $locations = [];
+            $locations = is_string($locationsRaw) ? json_decode($locationsRaw, true)
+                : (is_array($locationsRaw) ? $locationsRaw : (is_object($locationsRaw) ? (array) $locationsRaw : []));
 
-            $allowed_by_emails = [];
+            $allowedEmails = [];
             $allowed_location_ids = [];
+
             foreach ($locations as $loc) {
                 if (!empty($loc['email'])) {
-                    $emails = array_map('trim', explode(',', $loc['email']));
-                    $allowed_by_emails = array_merge($allowed_by_emails, $emails);
+                    $emails = array_map(fn($e) => strtolower(trim($e)), explode(',', $loc['email']));
+                    $allowedEmails = array_merge($allowedEmails, $emails);
                 }
-                if (!empty($loc['location_id']))
-                    $allowed_location_ids[] = $loc['location_id'];
+
+                if (!empty($loc['location_id'])) {
+                    $allowed_location_ids[] = trim($loc['location_id']);
+                }
             }
 
-            $announcement->allowed_by_email = $allowed_by_emails;
-            $announcement->locations_id = $allowed_location_ids;
+            // Remove duplicates
+            $allowedEmails = array_unique($allowedEmails);
+            $allowed_location_ids = array_unique($allowed_location_ids);
 
+            // Assign to announcement
+            $announcement->allowed_by_email = $allowedEmails;
+            $announcement->allowed_location_ids = $allowed_location_ids;
+            // dd($announcement->allowed_by_email,$announcement->locations);
             return $announcement;
         });
 
-        // Filter announcements based on audience_type (all / specific)
-        $announcements = $announcements->filter(function ($announcement) use ($userEmail, $superAdminEmail) {
-            if ($announcement->audience_type === 'all')
-                return true;
-
+        // -----------------------------------------------------
+        // 4. Filter by Audience Type (announcement.audience_type)
+        // -----------------------------------------------------
+        $announcements = $announcements->filter(function ($announcement) use ($userEmail) {
+            if ($announcement->audience_type === 'all') {
+                return true; // show all
+            }
             if ($announcement->audience_type === 'specific') {
                 $emails = array_map('strtolower', $announcement->allowed_by_email);
-
-                return (!empty($userEmail) && in_array(strtolower($userEmail), $emails))
-                    || (!empty($superAdminEmail) && in_array(strtolower($superAdminEmail), $emails));
+                return !empty($userEmail) && in_array(strtolower($userEmail), $emails);
             }
-
             return false;
         });
 
-        // -----------------------------
-        // Separate filters for global and per-announcement
-        // -----------------------------
-
+        // -----------------------------------------------------
+        // 5. Global Settings Load
+        // -----------------------------------------------------
         $globalSettings = AnnouncementSetting::first();
-        $globalSettingsArray = $globalSettings->settings ?? [];
+        $globalSettingsArray = $globalSettings
+            ? (is_string($globalSettings->settings)
+                ? json_decode($globalSettings->settings, true)
+                : ($globalSettings->settings ?? []))
+            : [];
 
-        // $announcementview=AnnouncementView::all();
-        // dd($announcementview);
+        // -----------------------------------------------------
+        // 6. Final Filter (audienceType + general_settings)
+        // -----------------------------------------------------
         $filtered = $announcements->filter(function ($announcement) use ($userEmail, $requestedAudienceType, $globalSettingsArray) {
+            $settings = is_string($announcement->settings)
+                ? json_decode($announcement->settings, true)
+                : ($announcement->settings ?? []);
 
-            $include = true;
-            $settings = $announcement->settings ?? [];
-
-            // 🔹 Apply global settings ONLY if general_settings = true
-            if (!empty($settings['general_settings'])) {
-
-                // Audience types from global settings
+            // -------------------------
+            // ✅ Case A: General Settings = true
+            // -------------------------
+            if (!empty($settings['general_settings']) && $settings['general_settings'] === true) {
                 $allowedTypes = $globalSettingsArray['audience']['types'] ?? [];
-                if ($requestedAudienceType && !in_array($requestedAudienceType, $allowedTypes)) {
-                    $include = false;
+                if(!$requestedAudienceType){
+                    return false;
                 }
-
-                // Frequency from global settings
-                $globalSettingsArray = $globalSettingsArray ?? []; // make sure it's defined
+                if ($requestedAudienceType && !in_array($requestedAudienceType, $allowedTypes)) {
+                    return false;
+                }
+                // dd($allowedTypes, $requestedAudienceType);
+                // Frequency & Stop conditions
                 $freq = $globalSettingsArray['frequency'] ?? [];
                 $conditions = $globalSettingsArray['conditions'] ?? [];
+                //  dd($conditions,$freq);
+                $view = GlobaViewAnnouncements::firstOrCreate(
+                    [
+                        'announcement_id' => $announcement->id,
+                        'user_email' => $userEmail,
+                    ],
+                    [
+                        'frequency' => [],
+                        'conditions' => [
+                            'current_views' => 0,
+                            'never_show' => false,
+                            'never_stop' => false
+                        ],
+                    ]
+                );
+                // dd($view);
+                $userConditions = $view->conditions ?? [];
+                // dd($userConditions);
+                $userViews = $userConditions['current_views'] ?? 0;
+                $frequencyLogs = $view->frequency ?? [];
 
-                // Get the latest view for this user and announcement
-                $view = GlobaViewAnnouncements::where('announcement_id', $announcement->id)
-                    ->where('user_email', $userEmail)
-                    ->latest()
-                    ->first();
+                $frequencyRule = $freq['type'] ?? 'every_page';
+                $gap = $freq['gap'] ?? null;
 
-                // --- Frequency check ---
-                if (
-                    $view && ($freq['mode'] ?? 'every_page') !== 'every_page'
-                    && !empty($freq['unit']) && !empty($freq['value'])
-                ) {
-                    $nextAllowed = Carbon::parse($view->updated_at)->add($freq['unit'], (int) $freq['value']);
-                    if (Carbon::now()->lessThan($nextAllowed)) {
-                        $include = false;
-                    }
+                if (!$this->canShowAnnouncement($frequencyRule, $frequencyLogs, $gap)) {
+                    return false;
                 }
 
-                // --- Stop conditions check ---
-                $stop = $conditions['stop'] ?? null;
-                $allowedViews = (int) ($conditions['views'] ?? 1);
-                $userViews = $view ? $view->views : 0;
+                if (($userConditions['never_stop'] ?? false) === true)
+                    return false;
+                if (($conditions['stop'] ?? null) === 'never_show_again' && ($userConditions['never_show'] ?? false))
+                    return false;
+                if (($conditions['stop'] ?? null) === 'after_views' && $userViews >= ($conditions['views'] ?? 1))
+                    return false;
 
-                if (($stop === 'after_views' || $stop === 'never_show_again') && $userViews >= $allowedViews) {
-                    $include = false;
-
-                }
+                return true;
             }
 
-            // 🔹 Apply per-announcement filter ALWAYS, independent of global
-            // Audience types per announcement
-            // Per-announcement audience filter
+            // -------------------------
+            // ✅ Case B: General Settings = false (per-announcement)
+            // -------------------------
             $allowedTypes = $settings['audience_types'] ?? [];
-            // dd($allowedTypes);
-            if ($requestedAudienceType && !empty($allowedTypes)) {
-                if (!in_array($requestedAudienceType, $allowedTypes)) {
-                    $include = false;
+            if(!$requestedAudienceType){
+                    return false;
                 }
-                // return false;
+            if ($requestedAudienceType && !empty($allowedTypes) && !in_array($requestedAudienceType, $allowedTypes)) {
+                return false;
             }
-            // Frequency per announcement
+
+            // Frequency Check
             $freq = $settings['frequency'] ?? [];
             $mode = $freq['mode'] ?? ($freq['type'] ?? null);
             $unit = $freq['unit'] ?? null;
             $value = (int) ($freq['value'] ?? 0);
-            //     dd(
-//     $announcement->id,
-//     $userEmail,
-//     AnnouncementView::where('announcement_id', $announcement->id)->pluck('email')
-// );
+
             $view = AnnouncementView::where('announcement_id', $announcement->id)
                 ->where('email', $userEmail)
                 ->latest()
                 ->first();
-            //  dd($view);
 
             if ($view && $mode !== 'every_page' && $unit && $value > 0) {
                 $nextAllowed = Carbon::parse($view->updated_at)->add($unit, $value);
-                if (Carbon::now()->lessThan($nextAllowed))
-                    $include = false;
+                if (Carbon::now()->lessThan($nextAllowed)) {
+                    return false;
+                }
             }
 
-            // Stop conditions per announcement
+            // Stop Condition
             if (Str::startsWith($announcement->display_setting, 'stop_after_')) {
                 preg_match('/stop_after_(\d+)_view/', $announcement->display_setting, $matches);
                 $allowed = $matches[1] ?? 1;
                 $views = $view ? $view->views : 0;
 
-                return $views < $allowed;
+                if ($views >= $allowed)
+                    return false;
             }
 
-
-            return $include;
+            return true;
         })->values();
 
-
-
+        //  -------------------------------
         // Email sending logic
-        foreach ($filtered as $announcement) {
+
+          foreach ($filtered as $announcement) {
             if ($announcement->allow_email && !$announcement->send_email) {
                 $mailSettingsList = AnnouncementEmailSetting::all();
                 foreach ($mailSettingsList as $mailSettings) {
@@ -678,81 +1151,6 @@ class AnnouncementController extends Controller
 
         return response()->json($filtered);
     }
-
-
-
-
-    // public function markAsViewed(Request $request)
-    // {
-    //     try {
-    //         $data = $request->validate([
-    //             'announcement_id' => 'required|integer',
-    //             'ghl_user_id' => 'nullable|string',
-    //             'location_id' => 'nullable|string',
-    //             'email' => 'required|email',
-    //             'user_id' => 'nullable|string',
-    //             'type' => 'required|string',
-    //             'role' => 'required|string',
-    //         ]);
-
-    //         $email = trim($data['email']);
-
-    //         // 👇 Combine type + role
-    //         $audienceType = strtolower($data['type'] . '_' . $data['role']);
-    //         // dd($audienceType);
-    //         // 🔹 Existing record find ya create karo
-    //         $view = AnnouncementView::firstOrNew([
-    //             'announcement_id' => $data['announcement_id'],
-    //             'email' => $email,
-    //         ]);
-
-    //         $view->ghl_user_id = $data['ghl_user_id'] ?? $view->ghl_user_id;
-    //         $view->location_id = $data['location_id'] ?? $view->location_id;
-    //         $view->user_id = $data['user_id'] ?? $view->user_id;
-    //         // dd(vars: $view);
-    //         // 👇 Audience type update (comma separated string)
-    //         $existingTypes = $view->audience_type ? explode(',', $view->audience_type) : [];
-
-    //         if (!in_array($audienceType, $existingTypes)) {
-    //             $existingTypes[] = $audienceType;
-    //         }
-
-    //         $view->audience_type = implode(',', $existingTypes);
-    //         //   dd($view);
-
-    //         $view->views = ($view->views ?? 0) + 1;
-    //         $view->save();
-
-    //         Log::info("👁 Announcement marked as viewed", [
-    //             'announcement_id' => $data['announcement_id'],
-    //             'email' => $email,
-    //             'audience_type' => $view->audience_type,
-    //             'totalViews' => $view->views,
-    //         ]);
-
-    //         return response()->json([
-    //             'message' => 'View recorded successfully',
-    //             'views' => $view->views,
-    //             'saved' => $view,
-    //         ], 200);
-
-    //     } catch (\Illuminate\Validation\ValidationException $e) {
-    //         return response()->json([
-    //             'message' => 'Validation failed',
-    //             'error' => $e->errors(),
-    //             'views' => null,
-    //             'saved' => null,
-    //         ], 422);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'message' => 'Something went wrong',
-    //             'error' => $e->getMessage(),
-    //             'views' => null,
-    //             'saved' => null,
-    //         ], 500);
-    //     }
-    // }
-
 
     public function markAsViewed(Request $request)
     {
@@ -818,109 +1216,135 @@ class AnnouncementController extends Controller
         }
     }
 
-    // public function storeGlobalViewAnnouncements(Request $request)
-// {
-//     try {
-//         $data = $request->validate([
-//             'user_email'      => 'required|string|email',
-//             'user_id'         => 'nullable|integer',
-//             'location_id'     => 'nullable|integer',
-//             'ghl_user_id'     => 'nullable|integer',
-//             'announcement_id' => 'required|integer|exists:announcements,id', // validate request
-//         ]);
-
-
-    //         // Fetch the announcement setting if needed
-//         $setting = AnnouncementSetting::all(); // or filter by announcement_id if needed
-
-    //         foreach ($setting as $s) {
-//             $settings   = $s->settings;
-//             $frequency  = $settings['frequency']  ?? null;
-//             $conditions = $settings['conditions'] ?? null;
-
-    //             // Save or update the global view for this user and announcement
-//             GlobaViewAnnouncements::updateOrCreate(
-//                 [
-//                     'user_email'     => $data['user_email'],
-//                     'announcement_id'=> $data['announcement_id'], // from request
-//                 ],
-//                 [
-//                     'frequency'   => $frequency,
-//                     'conditions'  => $conditions,
-//                     'location_id' => $data['location_id'] ?? null,
-//                     'user_id'     => $data['user_id'] ?? null,
-//                     'ghl_user_id' => $data['ghl_user_id'] ?? null,
-//                 ]
-//             );
-//         }
-
-    //         return response()->json([
-//             'status'  => 'success',
-//             'message' => 'Global announcement view saved for user',
-//         ], 201);
-
-    //     } catch (\Exception $e) {
-//         return response()->json([
-//             'status'  => 'error',
-//             'message' => $e->getMessage(),
-//         ], 500);
-//     }
-// }
-
-
 
     public function storeGlobalViewAnnouncements(Request $request)
     {
+        $data = $request->validate([
+            'user_email' => 'required|string|email',
+            'user_id' => 'nullable|integer',
+            'location_id' => 'nullable|integer',
+            'ghl_user_id' => 'nullable|integer',
+            'announcement_id' => 'required|integer',
+        ]);
+
         try {
-            $data = $request->validate([
-                'announcement_id' => 'required|numeric', // works with bigints
-                'ghl_user_id' => 'nullable|string',
-                'location_id' => 'nullable|string',
-                'user_email' => 'required|email',
-                'user_id' => 'nullable|numeric', // match bigint
-               
-            ]);
-
-            // Fetch announcements where general_settings is true
-            $announcements = Announcement::all(['id', 'settings'])
-                ->filter(fn($row) => !empty($row->settings['general_settings']) && $row->settings['general_settings'] === true);
-
-            // Fetch all global announcement settings
-            $globalSettings = AnnouncementSetting::all();
-
-            foreach ($globalSettings as $setting) {
-                $settings = $setting->settings;
-                $frequency = $settings['frequency'] ?? null;
-                $conditions = $settings['conditions'] ?? null;
-
-                foreach ($announcements as $announcement) {
-                    // Save or update for each user_email and announcement
-                    GlobaViewAnnouncements::updateOrCreate(
-                        [
-                            'user_email' => $data['user_email'], // unique per user
-                            'announcement_id' => $announcement->id,   // link to announcement
-                        ],
-                        [
-                            'frequency' => $frequency,
-                            'conditions' => $conditions,
-                            'location_id' => $data['location_id'] ?? null,
-                            'user_id' => $data['user_id'] ?? null,
-                            'ghl_user_id' => $data['ghl_user_id'] ?? null,
-                        ]
-                    );
-                }
+            $announcementSetting = AnnouncementSetting::first();
+            if (!$announcementSetting) {
+                return response()->json(['message' => 'Announcement settings not found.'], 404);
             }
 
+            $settings = is_string($announcementSetting->settings)
+                ? json_decode($announcementSetting->settings, true)
+                : $announcementSetting->settings;
+
+            if (!is_array($settings)) {
+                return response()->json(['message' => 'Invalid announcement settings.'], 500);
+            }
+
+            $conditions = $settings['conditions'] ?? [];
+            $frequency = $settings['frequency'] ?? [];
+            $stopCondition = $conditions['stop'] ?? 'never';
+            $maxViews = isset($conditions['views']) ? (int) $conditions['views'] : 0;
+
+            $globalView = GlobaViewAnnouncements::firstOrCreate(
+                [
+                    'user_email' => $data['user_email'],
+                    'announcement_id' => $data['announcement_id'],
+                ],
+                [
+                    'user_id' => $data['user_id'] ?? null,
+                    'location_id' => $data['location_id'] ?? null,
+                    'ghl_user_id' => $data['ghl_user_id'] ?? null,
+                    'frequency' => [],
+                    'conditions' => ['current_views' => 0, 'never_show' => false],
+                ]
+            );
+
+            $userConditions = $globalView->conditions ?? [];
+            $currentViews = $userConditions['current_views'] ?? 0;
+            $neverShowFlag = $userConditions['never_stop'] ?? false;
+
+            if ($stopCondition === 'never_show_again' && $neverShowFlag) {
+                return response()->json(['message' => 'never_show_again', 'current_views' => $currentViews], 200);
+            }
+
+            if ($stopCondition === 'after_views' && $maxViews > 0 && $currentViews >= $maxViews) {
+                $userConditions['never_stop'] = true;
+                $globalView->conditions = $userConditions;
+                $globalView->save();
+
+                return response()->json(['message' => 'max views reached', 'current_views' => $currentViews], 200);
+            }
+
+            $freqLogs = $globalView->frequency ?? [];
+            $frequencyRule = $frequency['type'] ?? 'every_page';
+            $gap = $frequency['gap'] ?? null;
+
+            if (!$this->canShowAnnouncement($frequencyRule, $freqLogs, $gap)) {
+                return response()->json([
+                    'message' => "Blocked by frequency rule ($frequencyRule)",
+                    'last_view' => !empty($freqLogs) ? end($freqLogs) : null,
+                ], 200);
+            }
+
+            $userConditions['current_views'] = $currentViews + 1;
+            if ($stopCondition === 'never_show_again') {
+                $userConditions['never_show'] = true;
+            }
+            $globalView->conditions = $userConditions;
+
+            // ✅ Save new frequency timestamp as string
+            $freqLogs[] = now()->toDateTimeString();
+            $globalView->frequency = $freqLogs;
+            $globalView->save();
+
             return response()->json([
-                'status' => 'success',
-                'message' => 'Global announcement view saved for user',
-            ], 201);
+                'message' => 'Announcement view recorded.',
+                'current_views' => $userConditions['current_views']
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => 'Failed to store announcement view.',
+                'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    private function canShowAnnouncement($frequencyRule, $frequencyLogs, $gap = null)
+    {
+        $lastView = null;
+
+        if (!empty($frequencyLogs)) {
+            try {
+                $lastView = Carbon::parse(end($frequencyLogs));
+            } catch (\Exception $e) {
+                $lastView = null; // agar parse na ho to ignore
+            }
+        }
+
+        switch ($frequencyRule) {
+            case 'every_page':
+                return true;
+
+            case 'once_per_session':
+                $sessionKey = "announcement_shown_" . request('announcement_id');
+                if (session()->has($sessionKey)) {
+                    return false;
+                }
+                session()->put($sessionKey, true);
+                return true;
+
+            case 'once_every_hours':
+                $gap = $gap ?: 1; // default 1 hour
+                return !$lastView || now()->diffInHours($lastView) >= $gap;
+
+            case 'once_every_days':
+                $gap = $gap ?: 1; // default 1 day
+                return !$lastView || now()->diffInDays($lastView) >= $gap;
+
+            default:
+                return true;
         }
     }
 

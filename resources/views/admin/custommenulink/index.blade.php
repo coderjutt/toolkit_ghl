@@ -16,7 +16,6 @@
         @if(isset($userPermissions['Custommenulink']) && in_array('Add', $userPermissions['Custommenulink']))
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">Custom Menu Links</h1>
-                <!-- Add Custom Menu Link Button -->
                 <button @click="open=true" class="bg-blue-600 text-white px-4 py-2 rounded">
                     + Add CustomMenuLink
                 </button>
@@ -26,7 +25,7 @@
         {{-- Table --}}
         <div class="bg-white shadow rounded-lg overflow-x-auto">
           @if(isset($userPermissions['Custommenulink']) && in_array('List', $userPermissions['Custommenulink']))  
-        <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
                 <thead class="bg-gray-100 text-left text-xs uppercase font-semibold text-gray-600">
                     <tr>
                         <th class="px-6 py-3">Title</th>
@@ -40,18 +39,24 @@
                         <tr>
                             <td class="px-6 py-4">{{ $link->Title }}</td>
                             <td class="px-6 py-4">
-                                @if(is_array($link->allowed_emails))
-                                    {{ implode(', ', $link->allowed_emails) }}
+                                @php
+                                    $allowed = is_string($link->allowed_emails) ? json_decode($link->allowed_emails, true) : $link->allowed_emails;
+                                @endphp
+                                @if(is_array($allowed))
+                                    {{ implode(', ', $allowed) }}
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                @if(is_array($link->restricted_email))
-                                    {{ implode(', ', $link->restricted_email) }}
+                                @php
+                                    $restricted = is_string($link->restricted_email) ? json_decode($link->restricted_email, true) : $link->restricted_email;
+                                @endphp
+                                @if(is_array($restricted))
+                                    {{ implode(', ', $restricted) }}
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
                                 @if(isset($userPermissions['Custommenulink']) && in_array('Edit', $userPermissions['Custommenulink']))
-                                    <button class="text-white bg-blue-600 px-3 py-1 rounde hover:underline"
+                                    <button class="text-white bg-blue-600 px-3 py-1 rounde"
                                         @click="openEdit = true; editData = {{ json_encode($link) }}">
                                      <i class="far fa-edit" style="font-size:14px"></i>
                                     </button>
@@ -77,6 +82,7 @@
             </table>
         </div>
         @endif 
+
         <!-- Add Modal -->
         <div x-show="open" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div @click.away="open = false" class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
@@ -254,19 +260,31 @@
                 }
             });
 
-            // Prefill edit Tagify when Edit modal opens
+            // Prefill edit Tagify
             document.addEventListener("click", function (e) {
-                if (e.target.matches("button.text-blue-600")) {
-                    let data = JSON.parse(e.target.getAttribute("@click").split("editData = ")[1]);
+                if (e.target.closest("button.text-white.bg-blue-600")) {
+                    let raw = e.target.closest("button").getAttribute("@click");
+                    let data = JSON.parse(raw.split("editData = ")[1]);
 
                     editAllowedTagify.removeAllTags();
                     editRestrictedTagify.removeAllTags();
 
                     if (data.allowed_emails) {
-                        editAllowedTagify.addTags(data.allowed_emails);
+                        let allowed = Array.isArray(data.allowed_emails)
+                            ? data.allowed_emails
+                            : typeof data.allowed_emails === "string"
+                                ? (data.allowed_emails.startsWith("[") ? JSON.parse(data.allowed_emails) : data.allowed_emails.split(","))
+                                : [];
+                        editAllowedTagify.addTags(allowed);
                     }
+
                     if (data.restricted_email) {
-                        editRestrictedTagify.addTags(data.restricted_email);
+                        let restricted = Array.isArray(data.restricted_email)
+                            ? data.restricted_email
+                            : typeof data.restricted_email === "string"
+                                ? (data.restricted_email.startsWith("[") ? JSON.parse(data.restricted_email) : data.restricted_email.split(","))
+                                : [];
+                        editRestrictedTagify.addTags(restricted);
                     }
                 }
             });
