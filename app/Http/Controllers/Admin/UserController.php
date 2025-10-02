@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\Fluent\Concerns\Has;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -96,40 +99,100 @@ class UserController extends Controller
     }
 
 
-    public function store(Request $req)
-    {
-        //dd($req->all());
-        $rules = [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-        ];
-        // Add password rule if creating a new user (id == 0)
-        if ($req->id === '0') {
-            $rules['password'] = 'required|string|min:8';
+    // public function store(Request $req)
+    // {
+    //     //dd($req->all());
+    //     $rules = [
+    //         'name' => 'required|string|max:255',
+    //         'email' => 'required|email|max:255',
+    //     ];
+        
+    //     // Add password rule if creating a new user (id == 0)
+    //     if ($req->id === '0') {
+    //         $rules['password'] = 'required|string|min:8';
+    //     }
+    //     $validatedData = $req->validate($rules);
+    //     if (!empty($req->password)) {
+    //         $validatedData['password'] = bcrypt($req->password);
+    //     }
+    //     if (!empty($req->location_id)) {
+    //         $validatedData['location_id'] = $req->location_id;
+    //     }
+    //     if ($req->id === '0') {
+    //         $validatedData['role'] = is_role() == 'superadmin' ? 2 : 3;
+    //         $validatedData['added_by'] = auth()->id();
+    //     }
+    //     //dd($validatedData);
+    //     // Save the user - update if the user already exists, or create a new one
+    //     $user = User::updateOrCreate(['id' => $req->id], $validatedData);
+    //     // Return a response
+    //     if ($req->ajax()) {
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'User saved successfully',
+    //             'data' => $user,
+    //         ]);
+    //     }
+    // }
+
+
+
+    
+
+    // use Illuminate\Support\Facades\Hash;
+
+        public function store(Request $req)
+        {
+            // dd($req->all());
+            $rules = [
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+            ];
+            // Add password rule if creating a new user
+            if ($req->id === '0') {
+                $rules['password'] = 'required|string|min:8';
+            }
+            // Manual key rule (optional if user update kare to bhi chal jaye)
+            $rules['manual_key'] = 'nullable|string|max:255';
+
+            $validatedData = $req->validate($rules);
+            // Encrypt password if provided
+            if (!empty($req->password)) {
+                $validatedData['password'] = bcrypt($req->password);
+            }
+            if (!empty($req->location_id)) {
+                $validatedData['location_id'] = $req->location_id;
+            }
+            if ($req->id === '0') {
+                $validatedData['role'] = is_role() == 'superadmin' ? 2 : 3;
+                $validatedData['added_by'] = auth()->id();
+            }
+            // ✅ Manual Key + Master Key se Final Key generate karna
+            if (!empty($req->manual_key)) {
+                $manualKey = $req->manual_key;
+                // $masterKey = env('MASTER_SSO_KEY');
+                $masterSetting = Setting::where('key', 'crm_master_key')->first();
+                $masterKey = $masterSetting ? $masterSetting->value : null;
+                //  dd($masterKey);
+                // Secure hash banate hain (non-reversible)
+                $finalKey = Hash::make($masterKey . $manualKey);
+
+                $validatedData['manual_key'] = $manualKey;
+                $validatedData['final_key'] = $finalKey;
+            }
+            // dd($validatedData);
+
+            // Save user (update or create)
+            $user = User::updateOrCreate(['id' => $req->id], $validatedData);
+            // Response
+            if ($req->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'User saved successfully',
+                    'data' => $user,
+                ]);
+            }
         }
-        $validatedData = $req->validate($rules);
-        if (!empty($req->password)) {
-            $validatedData['password'] = bcrypt($req->password);
-        }
-        if (!empty($req->location_id)) {
-            $validatedData['location_id'] = $req->location_id;
-        }
-        if ($req->id === '0') {
-            $validatedData['role'] = is_role() == 'superadmin' ? 2 : 3;
-            $validatedData['added_by'] = auth()->id();
-        }
-        //dd($validatedData);
-        // Save the user - update if the user already exists, or create a new one
-        $user = User::updateOrCreate(['id' => $req->id], $validatedData);
-        // Return a response
-        if ($req->ajax()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User saved successfully',
-                'data' => $user,
-            ]);
-        }
-    }
 
     public function profile()
     {

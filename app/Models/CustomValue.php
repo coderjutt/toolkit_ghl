@@ -9,5 +9,6 @@ class CustomValue extends Model
     protected $fillable = [
         'name',
         'value',
+        'user_id',
     ];
 }

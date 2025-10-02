@@ -16,6 +16,7 @@
         <div class="body-wrapper">
 
             <div class="container-fluid">
+                <!-- <h1>helo hi!</h1> -->
                     @include('autoauth.message')
                 @yield('section')
 

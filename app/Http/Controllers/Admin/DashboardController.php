@@ -3,28 +3,66 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Announcement;
 use App\Models\Contact;
+use App\Models\Contacts;
 use App\Models\GhlUser;
 use App\Models\Message;
 use App\Models\Opportunity;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\UserPermission;
+use App\Models\UserScriptPermission;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
 use App\Helpers\formatMonetaryValue;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
+        $userId = login_id();
+        $permissions = UserPermission::where('user_id', $userId)
+            ->distinct('module')  // only unique modules
+            ->get(['module']);
+        $scriptPermissions = UserScriptPermission::where('user_id', $userId)->pluck('permission');
+        $totalPermissions = count($permissions);
 
-        return view('admin.dashboard');
+        // Announcements
+        $totalannouncements = Announcement::where('user_id', $userId)->count();
+        $announcements = Announcement::where('user_id', $userId)
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        // Contacts
+        $totalContactbutton = Contacts::where('user_id', $userId)->count();
+        $Contactbutton = Contacts::where('user_id', $userId)
+            ->latest()
+            ->limit(3)
+            ->get();
+        //  super admin 
+         $users=User::where('status',1)->get();
+        $activeuser = User::where('status', 1)->count();
+        // dd($activeuser);
+        return view('admin.dashboard', compact(
+            'totalPermissions',
+            'scriptPermissions',
+            'announcements',
+            'totalannouncements',
+            'Contactbutton',
+            'users',
+            'totalContactbutton',
+            'activeuser'
+        ));
+
     }
 
     public function getDashboardData(Request $request)
     {
-        
+
         $data = $this->fetchDashboardData($request);
         return response()->json($data);
     }
@@ -46,7 +84,7 @@ class DashboardController extends Controller
             ])
             ->withSum(['wonOpportunities' => fn($q) => $q->whereBetween('opportunities.date_added', [$startDate, $endDate])], 'monetary_value')
             ->orderByDesc('won_opportunities_sum_monetary_value');
-            return DataTables::of($query)
+        return DataTables::of($query)
             ->addColumn('name', fn($user) => $user->first_name . ' ' . $user->last_name)
             ->addColumn('sale', fn($user) => '$' . formatMonetaryValue($user->won_opportunities_sum_monetary_value, 2))
             ->addColumn('won', fn($user) => $user->won_opportunities_count)
@@ -99,7 +137,8 @@ class DashboardController extends Controller
     {
         if ($locationUserId) {
             $validAgent = User::where('id', $locationUserId)->exists();
-            if ($validAgent) return collect([$locationUserId]);
+            if ($validAgent)
+                return collect([$locationUserId]);
         }
         return $this->getAssignedUserIds($user);
     }
@@ -269,4 +308,25 @@ class DashboardController extends Controller
             ->addColumn('note_count', fn($user) => $user->note_count)
             ->make(true);
     }
+
+    private function permissions()
+    {
+        $userId = Auth::user();
+
+        $permissions = UserPermission::where('user_id', $userId)->get(['module', 'permission']);
+        $scriptPermissions = UserScriptPermission::where('user_id', $userId)->pluck('permission')->toArray();
+
+        $moduleMap = [];
+        foreach ($permissions as $item) {
+            $moduleMap[$item->module][] = $item->permission;
+        }
+
+        return response()->json([
+            'permissions' => $moduleMap,
+            'script_permissions' => $scriptPermissions,
+        ]);
+
+    }
+
+
 }

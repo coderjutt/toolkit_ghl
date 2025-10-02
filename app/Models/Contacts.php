@@ -9,6 +9,8 @@ class Contacts extends Model
 protected $table = "contacts_buttons";
     protected $fillable = [
         'title', 'action', 'url', 'iframe', 'classes',
-        'locations', 'folder', 'color', 'background'
+        'locations', 'folder', 'color', 'background','user_id'
     ];
+    
+
 }

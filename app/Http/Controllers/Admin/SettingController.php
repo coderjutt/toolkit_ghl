@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Setting;
 use App\Models\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\Fluent\Concerns\Has;
 use Yajra\DataTables\DataTables;
 class SettingController extends Controller
 {
@@ -23,7 +25,8 @@ class SettingController extends Controller
     }
 
     public function save(Request $request)
-    {
+    { 
+        //  dd($request->all());
         foreach($request->setting ?? [] as $key=>$value){
 
             save_settings($key,$value);
@@ -92,5 +95,18 @@ class SettingController extends Controller
         }
         return view('admin.log.index');
     }
+    public function checkPassword(Request $request)
+{
+    $request->validate([
+        'password' => 'required|string',
+    ]);
+
+    $user = auth()->user();
+    if (Hash::check($request->password, $user->password)) {
+        return response()->json(['status' => 'success']);
+    }
+
+    return response()->json(['status' => 'error']);
+}
 
 }

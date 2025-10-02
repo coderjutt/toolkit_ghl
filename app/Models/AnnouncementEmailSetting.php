@@ -10,6 +10,7 @@ class AnnouncementEmailSetting extends Model
   use HasFactory;
 
     protected $fillable = [
+       'user_id',
         'from_name',
         'from_email',
         'location_id',

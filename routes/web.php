@@ -92,6 +92,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
             Route::get('/index', [SubAccountController::class, 'index'])->name('index');
             Route::post('/policies', [SubAccountController::class, 'policies'])->name('policies');
             Route::get('/user/search', [SubAccountController::class, 'searchUserByAjax'])->name('user.search');
+
         });
 
         Route::prefix('log')->name('logs.')->group(function () {
@@ -136,9 +137,10 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         // LocationCustomizer
         Route::post('/store', [LocationCustomizerController::class, 'store'])->name('location_customizer.store');
         Route::get('/locationcustomizer/index', [LocationcustomizerController::class, 'index'])->name('locationcustomizer.index');
+        Route::put('/location_customizer/{id}', [LocationcustomizerController::class, 'update'])->name('locationcustomizer.update');
         Route::post('/location_customizer/toggle', [LocationCustomizerController::class, 'toggleEnable'])
             ->name('location_customizer.toggle');
-        Route::delete('delete/{id}',[LocationcustomizerController::class,'destroy'])->name('loc_custom.destroy');
+        Route::delete('delete/{id}', [LocationcustomizerController::class, 'destroy'])->name('loc_custom.destroy');
         // customcss 
         // Fetch CSS for modal
         Route::get('custom_css/{locationId}', [LocationcustomizerController::class, 'editCSS'])->name('custom_css.edit');
@@ -175,7 +177,7 @@ Route::middleware(['auth', 'super_admin'])->group(function () {
             ->pluck('module')
             ->unique()
             ->toArray();
-
+            //    dd($allowedModules);
         session()->forget('user_modules_' . $user->id);
         session()->put('user_modules_' . $user->id, $allowedModules);
         if ($user) {
@@ -193,12 +195,8 @@ Route::middleware(['auth', 'super_admin'])->group(function () {
         }
         return redirect()->intended('admin/dashboard');
     })->name('admin.user.autoLogin');
+    Route::post('/check-user-password', [SettingController::class, 'checkPassword'])->name('check.user.password');
 });
-
-
-
-
-
 Route::get('/backtoadmin', function () {
     if (request()->has('admin') && session()->has('super_admin')) {
         Auth::login(session('super_admin'));

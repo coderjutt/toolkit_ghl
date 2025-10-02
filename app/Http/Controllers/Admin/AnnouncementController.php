@@ -27,12 +27,21 @@ class AnnouncementController extends Controller
 
     public function index()
     {
-        $announcements = Announcement::latest()->paginate(10);
-        // $locations = json_decode($announcements->locations, true) ?? [];
+        $announcements = Announcement::where('user_id', login_id())->paginate(10);
 
-        // Har announcement ke liye settings attach karo
         $announcements->getCollection()->transform(function ($announcement) {
-            $settings = AnnouncementSetting::whereJsonContains('settings->announcement_id', (string) $announcement->id)->first();
+            // Agar DB already array return kar raha hai to direct use karo
+            $locations = is_array($announcement->locations)
+                ? $announcement->locations
+                : json_decode($announcement->locations, true);
+
+            $announcement->emails = $locations['email'] ?? [];
+            $announcement->location_ids = $locations['location_id'] ?? [];
+
+            // Settings attach
+            $settings = AnnouncementSetting::where('user_id', login_id())
+                ->whereJsonContains('settings->announcement_id', (string) $announcement->id)
+                ->first();
 
             $announcement->currentSettings = $settings ? $settings->settings : [
                 'audience' => ['types' => []],
@@ -43,10 +52,13 @@ class AnnouncementController extends Controller
             return $announcement;
         });
 
-        // Optional: agar aapko ek global settings record chahiye (announcement_id = null)
-        $settings = AnnouncementSetting::whereJsonContains('settings->announcement_id', null)->first();
+        $settings = AnnouncementSetting::where('user_id', login_id())
+            ->where(function ($q) {
+                $q->whereNull('settings->announcement_id')
+                    ->orWhere('settings->announcement_id', 'null'); // JSON me string "null"
+            })
+            ->first();
 
-        // Current user ki permissions
         $userPermissions = UserPermission::where('user_id', auth()->id())
             ->get()
             ->groupBy('module')
@@ -55,8 +67,6 @@ class AnnouncementController extends Controller
             })
             ->toArray();
 
-        // dd($announcements);
-
         return view('admin.announcement.index', compact(
             'announcements',
             'settings',
@@ -64,13 +74,14 @@ class AnnouncementController extends Controller
         ));
     }
 
+
     public function create()
     {
         $locationIds = GhlAuth::where('user_type', 'Location')
             ->where('user_id', auth()->id())
             ->pluck('location_id');
         $users = User::select('id', 'email')->get();
-    
+
         $roles = $users->pluck('role')->filter()->unique()->values();
 
         return view('admin.announcement.create', compact('locationIds', 'users', 'roles'));
@@ -321,6 +332,9 @@ class AnnouncementController extends Controller
         ]);
 
         $announcement = new Announcement();
+        // if ($announcement->user_id !== auth()->id()) {
+        //     return redirect()->back()->with('error', 'Unauthorized action.');
+        // }
         $announcement->status = $data['status'];
         $announcement->expiry_type = $data['expiry_type'];
         $announcement->expiry_date = $data['expiry_type'] === 'date' ? $data['expiry_date'] : null;
@@ -410,7 +424,7 @@ class AnnouncementController extends Controller
             'expiry_type' => 'required|string',
             'expiry_date' => 'nullable|date',
             'audience_type' => 'required|string', // all/specific
-            'custom_views' => 'nullable|integer|min:1', // ✅ added
+            'custom_views' => 'nullable|integer|min:1',
             'title' => 'required|string',
             'body' => 'required|string',
             'display_setting' => 'required|string',
@@ -501,6 +515,9 @@ class AnnouncementController extends Controller
     public function destroy($id)
     {
         $announcement = Announcement::findOrFail($id);
+        if ($announcement->user_id !== auth()->id()) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         $announcement->delete();
         return redirect()->back()->with('success', 'Announcement delete successfully');
     }
@@ -609,6 +626,69 @@ class AnnouncementController extends Controller
         }
     }
 
+    // public function save_settings(Request $request)
+    // {
+    //     $request->validate([
+    //         'announcement_id' => 'nullable|integer|exists:announcements,id',
+    //         'audience.types' => 'array|nullable',
+    //         'stop' => 'nullable|string',
+    //         'views' => 'nullable|integer',
+    //         'freq' => 'nullable|string',
+    //         'freq_value' => 'nullable|integer',
+    //         'freq_unit' => 'nullable|string',
+    //     ]);
+
+    //     if ($request->filled('announcement_id')) {
+    //         // 🔹 Agar specific announcement ke liye setting hai
+    //         $settings = AnnouncementSetting::updateOrCreate(
+    //             ['id' => $request->announcement_id], // 👈 isko id ki tarah treat kar lo
+    //             [
+    //                 'settings' => [
+    //                     'announcement_id' => $request->announcement_id, // 👈 JSON me save
+    //                     'audience' => [
+    //                         'types' => $request->input('audience.types', []),
+    //                     ],
+    //                     'conditions' => [
+    //                         'stop' => $request->stop ?? null,
+    //                         'views' => $request->views ?? null,
+    //                     ],
+    //                     'frequency' => [
+    //                         'mode' => $request->freq ?? null,
+    //                         'value' => $request->freq_value ?? 1,
+    //                         'unit' => $request->freq_unit ?? 'days',
+    //                     ],
+    //                 ]
+    //             ]
+    //         );
+    //     } else {
+    //         // 🔹 Global setting
+    //         $settings = AnnouncementSetting::updateOrCreate(
+    //             ['id' => 2], // ek fixed global record
+    //             [
+    //                 'settings' => [
+    //                     'announcement_id' => null, // global me null
+    //                     'audience' => [
+    //                         'types' => $request->input('audience.types', []),
+    //                     ],
+    //                     'conditions' => [
+    //                         'stop' => $request->stop ?? null,
+    //                         'views' => $request->views ?? null,
+    //                     ],
+    //                     'frequency' => [
+    //                         'mode' => $request->freq ?? null,
+    //                         'value' => $request->freq_value ?? 1,
+    //                         'unit' => $request->freq_unit ?? 'days',
+    //                     ],
+    //                 ]
+    //             ]
+    //         );
+    //     }
+
+    //     return redirect()->route('admin.announcement.index')
+    //         ->with('success', 'Settings saved successfully!');
+    // }
+
+
     public function save_settings(Request $request)
     {
         $request->validate([
@@ -621,55 +701,39 @@ class AnnouncementController extends Controller
             'freq_unit' => 'nullable|string',
         ]);
 
-        if ($request->filled('announcement_id')) {
-            // 🔹 Agar specific announcement ke liye setting hai
-            $settings = AnnouncementSetting::updateOrCreate(
-                ['id' => $request->announcement_id], // 👈 isko id ki tarah treat kar lo
-                [
-                    'settings' => [
-                        'announcement_id' => $request->announcement_id, // 👈 JSON me save
-                        'audience' => [
-                            'types' => $request->input('audience.types', []),
-                        ],
-                        'conditions' => [
-                            'stop' => $request->stop ?? null,
-                            'views' => $request->views ?? null,
-                        ],
-                        'frequency' => [
-                            'mode' => $request->freq ?? null,
-                            'value' => $request->freq_value ?? 1,
-                            'unit' => $request->freq_unit ?? 'days',
-                        ],
-                    ]
-                ]
-            );
-        } else {
-            // 🔹 Global setting
-            $settings = AnnouncementSetting::updateOrCreate(
-                ['id' => 2], // ek fixed global record
-                [
-                    'settings' => [
-                        'announcement_id' => null, // global me null
-                        'audience' => [
-                            'types' => $request->input('audience.types', []),
-                        ],
-                        'conditions' => [
-                            'stop' => $request->stop ?? null,
-                            'views' => $request->views ?? null,
-                        ],
-                        'frequency' => [
-                            'mode' => $request->freq ?? null,
-                            'value' => $request->freq_value ?? 1,
-                            'unit' => $request->freq_unit ?? 'days',
-                        ],
-                    ]
-                ]
-            );
-        }
+        $userId = auth()->id(); // 👈 current logged in user
+
+        $data = [
+            'settings' => [
+                'announcement_id' => $request->announcement_id ?? null,
+                'audience' => [
+                    'types' => $request->input('audience.types', []),
+                ],
+                'conditions' => [
+                    'stop' => $request->stop ?? null,
+                    'views' => $request->views ?? null,
+                ],
+                'frequency' => [
+                    'mode' => $request->freq ?? null,
+                    'value' => $request->freq_value ?? 1,
+                    'unit' => $request->freq_unit ?? 'days',
+                ],
+            ]
+        ];
+
+        // 🔹 Update or create per-user settings
+        $settings = AnnouncementSetting::updateOrCreate(
+            ['user_id' => $userId], // 👈 unique by user_id
+            $data
+        );
 
         return redirect()->route('admin.announcement.index')
             ->with('success', 'Settings saved successfully!');
     }
+
+
+
+
     public function save_settingswithrow(Request $request)
     {
         $announcementId = $request->announcement_id;
@@ -712,16 +776,17 @@ class AnnouncementController extends Controller
     public function emailsettingupdate(Request $request)
     {
         $request->validate([
-            'from_name' => 'required|nullable|string|max:255',
-            'from_email' => 'required|nullable|email|max:255',
-            'location_id' => 'required|nullable|string|max:255',
-            'priviet_key' => 'required|nullable|string|max:255',
+            'from_name' => 'nullable|string|max:255',
+            'from_email' => 'nullable|email|max:255|unique:announcement_email_settings,from_email',
+            'location_id' => 'nullable|string|max:255',
+            'priviet_key' => 'nullable|string|max:255',
         ]);
+        // $validated['user_id'] = auth()->id();
 
-        // Update or create single record
-        AnnouncementEmailSetting::updateOrCreate(
-            // ['id' => 1], // always single record
+        AnnouncementEmailSetting::Create(
+
             [
+                'user_id' => auth()->id(),
                 'from_name' => $request->from_name,
                 'from_email' => $request->from_email,
                 'location_id' => $request->location_id,

@@ -1,6 +1,8 @@
 @extends('admin.layouts.index')
 
 @section('content')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+
     <div class="max-w-7xl mx-auto px-4 py-6">
         {{--Flash messages --}}
         @if(session('success'))
@@ -148,9 +150,19 @@
                                     class="bg-gray-300 text-gray-800 px-4 py-2 rounded">
                                     Cancel
                                 </button>
-                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
-                                    Save Settings
+                                <button type="submit"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded flex items-center justify-center gap-2"
+                                    onclick="this.querySelector('.spinner').classList.remove('hidden'); this.querySelector('.btn-text').classList.add('hidden');">
+                                    <span class="btn-text">Save Settings</span>
+                                    <svg class="spinner hidden animate-spin h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                          0 0 5.373 0 12h4z"></path>
+                                    </svg>
                                 </button>
+
                             </div>
                         </form>
                     </div>
@@ -239,8 +251,17 @@
                                     class="bg-gray-300 text-gray-800 px-4 py-2 rounded">
                                     Cancel
                                 </button>
-                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
-                                    Save
+                                <button type="submit"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded flex items-center justify-center gap-2"
+                                    onclick="this.querySelector('.spinner').classList.remove('hidden'); this.querySelector('.btn-text').classList.add('hidden');">
+                                    <span class="btn-text">Save</span>
+                                    <svg class="spinner hidden animate-spin h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                      0 0 5.373 0 12h4z"></path>
+                                    </svg>
                                 </button>
                             </div>
                         </form>
@@ -299,7 +320,7 @@
                                         </form>
                                     @endif
                                     {{-- Settings --}}
-                                  
+
                                 </td>
                             </tr>
                         @endforeach
@@ -318,7 +339,7 @@
 
     <!-- Edit Modal -->
     <div id="editModal" class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50">
-        <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl p-6">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Edit Announcement</h2>
 
             <form id="editForm" method="POST">
@@ -381,12 +402,14 @@
                             <label class="block text-sm font-medium mb-1">Enter Location IDs (comma separated)</label>
                             <input type="text" id="edit_location_id" name="location_ids[]"
                                 class="w-full px-4 py-2 border-gray-300 rounded">
+
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium mb-1">Enter Emails (comma separated)</label>
                             <input type="text" id="edit_user_emails" name="emails[]"
                                 class="w-full px-4 py-2 border-gray-300 rounded">
+
                         </div>
                     </div>
                 </div>
@@ -396,24 +419,17 @@
                         <input type="text" name="title" id="edit_title" class="w-full border-gray-300 rounded px-4 py-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Display Setting</label>
-                        <select name="display_setting" id="edit_display_setting"
-                            class="w-full border-gray-300 rounded px-4 py-2" onchange="toggleCustomViewsEdit(this.value)">
-                            <option value="never_again">Never Again</option>
-                            <option value="custom">Stop After X Views</option>
-                        </select>
+                        <div class="mt-8 flex items-center">
+                           <input type="checkbox" id="edit_use_general_settings" name="use_general_settings"
+                                class="w-5 h-5 text-blue-600 mr-2" @if($settings && data_get($settings->settings, 'general_settings'))
+                                                checked
+                                            @endif>
+                            <label for="edit_use_general_settings" class="text-sm font-medium">Use General Settings</label>
+                        </div>
 
-                        <!-- Custom Views Input -->
-                        <input type="number" name="custom_views" id="edit_custom_views" placeholder="Enter number of views"
-                            class="w-full border-gray-300 rounded px-4 py-2 mt-2 hidden">
                     </div>
                 </div>
                 <!-- General Settings Checkbox -->
-                <div class="mb-4 flex items-center">
-                    <input type="checkbox" id="edit_use_general_settings" name="use_general_settings"
-                        class="w-5 h-5 text-blue-600 mr-2" {{ data_get($announcement->settings, 'general_settings') ? 'checked' : '' }}>
-                    <label for="edit_use_general_settings" class="text-sm font-medium">Use General Settings</label>
-                </div>
 
                 <!-- Custom Settings Fields (Audience & Frequency) -->
                 <div id="edit_customSettingsFields">
@@ -442,23 +458,39 @@
                                 <span>Agency Admin</span>
                             </label>
                         </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1">Display Setting</label>
+                            <select name="display_setting" id="edit_display_setting"
+                                class="w-full border-gray-300 rounded px-4 py-2"
+                                onchange="toggleCustomViewsEdit(this.value)">
+                                <option value="never_again">Never Again</option>
+                                <option value="custom">Stop After X Views</option>
+                            </select>
+                            <input type="number" name="custom_views" id="edit_custom_views"
+                                placeholder="Enter number of views"
+                                class="border rounded-lg w-10 mt-4 p-0 text-center hidden">
+                        </div>
+
+
+                        <!-- Custom Views Input -->
 
                         <!-- Frequency -->
                         <div class="mb-4">
                             <h3 class="font-semibold mb-2">Frequency</h3>
                             <label class="block flex space-x-2 mb-1">
-                                <input type="radio" name="freq" value="every_page" id="edit_freq_every_page">
+                                <input type="radio" name="freq" class="mr-3" value="every_page" id="edit_freq_every_page">
                                 Every page
                             </label>
                             <label class="block flex space-x-2 mb-1">
-                                <input type="radio" name="freq" value="once_session" id="edit_freq_once_session">
+                                <input type="radio" name="freq" class="mr-3" value="once_session"
+                                    id="edit_freq_once_session">
                                 Once per session
                             </label>
                             <label class="block flex items-center space-x-2">
                                 <input type="radio" name="freq" value="custom" id="edit_freq_custom">
                                 <span>Once every</span>
                                 <input type="number" name="freq_value" id="edit_freq_value"
-                                    class="border rounded w-20 text-center">
+                                    class="border rounded-lg w-10 p-0 text-center">
                                 <select name="freq_unit" id="edit_freq_unit" class="border rounded">
                                     <option value="days">days</option>
                                     <option value="hours">hours</option>
@@ -486,153 +518,200 @@
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeEditModal()"
                         class="bg-gray-500 text-white px-6 py-2 rounded">Cancel</button>
-                    <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded">Update</button>
+                    <button type="submit"
+                        class="bg-green-600 text-white px-6 py-2 rounded flex items-center justify-center gap-2"
+                        onclick="this.querySelector('.spinner').classList.remove('hidden'); this.querySelector('.btn-text').classList.add('hidden');">
+                        <span class="btn-text">Update</span>
+                        <svg class="spinner hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                            fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                              0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+
     <script>
-        function toggleCustomViewsEdit(value) {
-            let customInput = document.getElementById('edit_custom_views');
-            if (value === "custom") {
-                customInput.classList.remove("hidden");
-            } else {
-                customInput.classList.add("hidden");
-                customInput.value = "";
-            }
-        }
+        document.addEventListener("DOMContentLoaded", function () {
 
-        // document.getElementById('edit_display_setting').value = announcement.display_setting;
-        function openEditModal(announcement) {
-            const modal = document.getElementById('editModal');
-            const form = document.getElementById('editForm');
+            // Initialize Tagify once DOM loaded
+            // const locationInput = document.querySelector('#edit_location_id');
+            // const tagifyLocation = new Tagify(locationInput, { 
+            //     delimiters: ",",
+            //      maxTags: 50
+            //      });
 
-            // Set form action
-            const updateRoute = "{{ route('admin.announcement.update', ['id' => ':id']) }}";
-            form.action = updateRoute.replace(':id', announcement.id);
+            // const emailsInput = document.querySelector('#edit_user_emails');
+            // const tagifyEmails = new Tagify(emailsInput, {
+            //     delimiters: ",",
+            //     validate: function (email) {
+            //         return true;
+            //     }
+            // });
 
-            // Fill basic fields
-            document.getElementById('edit_title').value = announcement.title;
-            document.getElementById('edit_body').value = announcement.body;
-            document.getElementById('edit_status').value = announcement.status;
+            var tagifyLocation = new Tagify(document.querySelector('#edit_location_id'), {
+                delimiters: ",",
+                originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(",")
+            });
 
-            // Display setting
-            let displaySelect = document.getElementById('edit_display_setting');
-            let customInput = document.getElementById('edit_custom_views');
+            // Emails
+            var tagifyEmails = new Tagify(document.querySelector('#edit_user_emails'), {
+                delimiters: ",",
+                validate: email => true, // accept all emails
+                originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(",")
+            });
 
-            if (announcement.display_setting.startsWith("stop_after_")) {
-                displaySelect.value = "custom";
-                let match = announcement.display_setting.match(/stop_after_(\d+)_view/);
-                customInput.value = match ? match[1] : '';
-                customInput.classList.remove("hidden");
-            } else {
-                displaySelect.value = announcement.display_setting;
-                customInput.classList.add("hidden");
-                customInput.value = '';
-            }
+            // Full page loader for all forms
+            const loader = document.getElementById("formLoader");
+            document.querySelectorAll("form").forEach(form => {
+                form.addEventListener("submit", () => loader.classList.remove("hidden"));
+            });
 
-            // Audience type
-            if (announcement.audience_type === "specific") {
-                document.getElementById('edit_audience_specific').checked = true;
-                document.getElementById('editSpecificUsersDiv').classList.remove('hidden');
+            // Edit Modal Logic
+            window.openEditModal = function (announcement) {
+                const modal = document.getElementById('editModal');
+                const form = document.getElementById('editForm');
+                form.action = "{{ route('admin.announcement.update', ['id' => ':id']) }}".replace(':id', announcement.id);
 
-                if (announcement.locations) {
-                    document.getElementById('edit_location_id').value = announcement.locations.map(l => l.location_id).filter(Boolean).join(',');
-                    document.getElementById('edit_user_emails').value = announcement.locations.map(l => l.email).filter(Boolean).join(',');
+                // Basic fields
+                document.getElementById('edit_title').value = announcement.title;
+                document.getElementById('edit_body').value = announcement.body;
+                document.getElementById('edit_status').value = announcement.status;
+
+                // Display setting
+                const displaySelect = document.getElementById('edit_display_setting');
+                const customInput = document.getElementById('edit_custom_views');
+                if (announcement.display_setting.startsWith("stop_after_")) {
+                    displaySelect.value = "custom";
+                    const match = announcement.display_setting.match(/stop_after_(\d+)_view/);
+                    customInput.value = match ? match[1] : '';
+                    customInput.classList.remove("hidden");
+                } else {
+                    displaySelect.value = announcement.display_setting;
+                    customInput.value = '';
+                    customInput.classList.add("hidden");
                 }
-            } else {
-                document.getElementById('edit_audience_all').checked = true;
-                document.getElementById('editSpecificUsersDiv').classList.add('hidden');
+
+                // Audience type
+                if (announcement.audience_type === "specific") {
+                    document.getElementById('edit_audience_specific').checked = true;
+                    document.getElementById('editSpecificUsersDiv').classList.remove('hidden');
+
+                    // Update Tagify values
+                    tagifyLocation.removeAllTags();
+                    tagifyEmails.removeAllTags();
+                    if (announcement.locations) {
+                        tagifyLocation.addTags(announcement.locations.map(l => l.location_id).filter(Boolean));
+                        tagifyEmails.addTags(announcement.locations.map(l => l.email).filter(Boolean));
+                    }
+                } else {
+                    document.getElementById('edit_audience_all').checked = true;
+                    document.getElementById('editSpecificUsersDiv').classList.add('hidden');
+                }
+
+                // Expiry type
+                if (announcement.expiry_type === "date") {
+                    document.getElementById('edit_expiry_date').checked = true;
+                    document.getElementById('editExpiryDateDiv').classList.remove('hidden');
+                    document.getElementById('edit_expiry_input').value = announcement.expiry_date ? new Date(announcement.expiry_date).toISOString().split('T')[0] : '';
+                } else {
+                    document.getElementById('edit_expiry_never').checked = true;
+                    document.getElementById('editExpiryDateDiv').classList.add('hidden');
+                }
+
+                // Allow email
+                document.getElementById('edit_allow_email').checked = !!announcement.allow_email;
+
+                // General settings
+                const generalCheckbox = document.getElementById('edit_use_general_settings');
+                const customFields = document.getElementById('edit_customSettingsFields');
+                if (announcement.settings?.general_settings) {
+                    generalCheckbox.checked = true;
+                    customFields.classList.add('hidden');
+                } else {
+                    generalCheckbox.checked = false;
+                    customFields.classList.remove('hidden');
+
+                    // Audience checkboxes
+                    const types = announcement.settings?.audience_types || [];
+                    ['account_user', 'account_admin', 'agency_user', 'agency_admin'].forEach(type => {
+                        const el = document.getElementById(`edit_audience_${type}`);
+                        if (el) el.checked = types.includes(type);
+                    });
+
+                    // Frequency
+                    const freq = announcement.settings?.frequency || {};
+                    if (freq.type) {
+                        const freqEl = document.getElementById(`edit_freq_${freq.type}`);
+                        if (freqEl) freqEl.checked = true;
+                    }
+                    document.getElementById('edit_freq_value').value = freq.value || '';
+                    document.getElementById('edit_freq_unit').value = freq.unit || 'days';
+                }
+
+                // Show modal
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             }
 
-            // Expiry type
-            if (announcement.expiry_type === "date") {
-                document.getElementById('edit_expiry_date').checked = true;
-                document.getElementById('editExpiryDateDiv').classList.remove('hidden');
-                document.getElementById('edit_expiry_input').value = announcement.expiry_date ? new Date(announcement.expiry_date).toISOString().split('T')[0] : '';
-            } else {
-                document.getElementById('edit_expiry_never').checked = true;
-                document.getElementById('editExpiryDateDiv').classList.add('hidden');
+            window.closeEditModal = function () {
+                const modal = document.getElementById('editModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
 
-            // Allow email
-            document.getElementById('edit_allow_email').checked = announcement.allow_email == true;
+            // Toggle custom fields
+            document.getElementById('edit_use_general_settings').addEventListener('change', function () {
+                document.getElementById('edit_customSettingsFields').classList.toggle('hidden', this.checked);
+            });
 
-            // General settings
-            const generalCheckbox = document.getElementById('edit_use_general_settings');
-            const customFields = document.getElementById('edit_customSettingsFields');
+            // Audience type toggle
+            document.getElementById('edit_audience_all').addEventListener('change', () => document.getElementById('editSpecificUsersDiv').classList.add('hidden'));
+            document.getElementById('edit_audience_specific').addEventListener('change', () => document.getElementById('editSpecificUsersDiv').classList.remove('hidden'));
 
-            if (announcement.settings?.general_settings) { // <-- use general_settings
-                generalCheckbox.checked = true;
-                customFields.classList.add('hidden');
-            } else {
-                generalCheckbox.checked = false;
-                customFields.classList.remove('hidden');
+            // Expiry type toggle
+            document.getElementById('edit_expiry_never').addEventListener('change', () => document.getElementById('editExpiryDateDiv').classList.add('hidden'));
+            document.getElementById('edit_expiry_date').addEventListener('change', () => document.getElementById('editExpiryDateDiv').classList.remove('hidden'));
 
-                // Fill custom audience
-                const types = announcement.settings?.audience_types || [];
-                ['account_user', 'account_admin', 'agency_user', 'agency_admin'].forEach(type => {
-                    const el = document.getElementById(`edit_audience_${type}`);
-                    if (el) el.checked = types.includes(type);
+            // Display setting toggle
+            document.getElementById('edit_display_setting').addEventListener('change', function () {
+                document.getElementById('edit_custom_views').classList.toggle('hidden', this.value !== 'custom');
+            });
+        });
+    </script>
+    </script>
+
+    <!-- Full Page Loader -->
+    <div id="formLoader" class="fixed inset-0 bg-gray-800 bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <svg class="animate-spin h-10 w-10 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                            0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-white text-lg">Saving...</span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loader = document.getElementById("formLoader");
+
+            // Har form ke liye listener lagao
+            document.querySelectorAll("form").forEach(form => {
+                form.addEventListener("submit", function () {
+                    loader.classList.remove("hidden"); // loader show
                 });
-
-                // Fill frequency
-                const freq = announcement.settings?.frequency || {};
-                if (freq.type) {
-                    const freqEl = document.getElementById(`edit_freq_${freq.type}`);
-                    if (freqEl) freqEl.checked = true;
-                }
-                const freqValueEl = document.getElementById('edit_freq_value');
-                if (freqValueEl) freqValueEl.value = freq.value || '';
-                const freqUnitEl = document.getElementById('edit_freq_unit');
-                if (freqUnitEl) freqUnitEl.value = freq.unit || 'days';
-            }
-            // Show modal
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        // Close modal
-        function closeEditModal() {
-            const modal = document.getElementById('editModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // Hide/show custom fields when general settings checkbox toggled
-        document.getElementById('edit_use_general_settings').addEventListener('change', function () {
-            const customFields = document.getElementById('edit_customSettingsFields');
-            if (this.checked) {
-                customFields.classList.add('hidden');
-            } else {
-                customFields.classList.remove('hidden');
-            }
-        });
-
-        // Audience type toggle
-        document.getElementById('edit_audience_all').addEventListener('change', function () {
-            document.getElementById('editSpecificUsersDiv').classList.add('hidden');
-        });
-
-        document.getElementById('edit_audience_specific').addEventListener('change', function () {
-            document.getElementById('editSpecificUsersDiv').classList.remove('hidden');
-        });
-
-        // Expiry type toggle
-        document.getElementById('edit_expiry_never').addEventListener('change', function () {
-            document.getElementById('editExpiryDateDiv').classList.add('hidden');
-        });
-
-        document.getElementById('edit_expiry_date').addEventListener('change', function () {
-            document.getElementById('editExpiryDateDiv').classList.remove('hidden');
+            });
         });
     </script>
 
-
-    {{-- AlpineJS ko alag load karo --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-
-    </script>
 @endsection

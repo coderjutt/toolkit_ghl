@@ -78,19 +78,19 @@
 
         <!-- Column 3: span 3 -->
         <div class="col-span-12 sm:col-span-12 lg:col-span-12 bg-white rounded-xl shadow-sm p-5">
-           <div class="overflow-x-auto bg-white rounded-xl shadow-sm p-6 rounded-lg">
-                    <table id="searchtable" class="display w-full text-sm text-left">
-                        <thead>
-                            <tr>
-                                <th class="p-2" width="10%">ID</th>
-                                <th class="p-2">Name</th>
-                                <th class="p-2">Email</th>
-                                <th class="p-2">Status</th>
-                                <th class="p-2" width="30%">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm p-6 rounded-lg">
+                <table id="searchtable" class="display w-full text-sm text-left">
+                    <thead>
+                        <tr>
+                            <th class="p-2" width="10%">ID</th>
+                            <th class="p-2">Name</th>
+                            <th class="p-2">Email</th>
+                            <th class="p-2">Status</th>
+                            <th class="p-2" width="30%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -141,6 +141,32 @@
                                         class="shadow-sm  border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Please Enter Email" required="">
                                 </div>
+                                <!-- <div class="col-span-6 ">
+                                                        <label for="manual_key"
+                                                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">manual_key</label>
+                                                        <input type="text" name="manual_key" id="manual_key"
+                                                            class="shadow-sm  border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                                            placeholder="Please Enter manual_key" required="">
+                                                    </div> -->
+
+                                <div class="col-span-6">
+                                    <label for="manual_key"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Manual Key
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="text" name="manual_key" id="manual_key"
+                                            class="shadow-sm border border-gray-300 text-gray-900 sm:text-sm rounded-lg 
+                                                            focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 
+                                                            dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
+                                                            dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Please Enter manual_key"
+                                            required>
+                                        <button type="button" onclick="regenerateKey()"
+                                            class="px-3 py-2 bg-blue-600 text-white rounded">
+                                            🔄
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="col-span-6 ">
                                     <label for="position"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
@@ -154,7 +180,7 @@
                                         ID</label>
                                     <input type="text" name="location_id" id="location_id"
                                         class="shadow-sm  border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="Please Enter Password" required="">
+                                        placeholder="Please Enter location" required="">
                                 </div>
                             </div>
 
@@ -162,10 +188,16 @@
                         <!-- Modal footer -->
                         <div class="items-center p-6 border-t border-gray-200 rounded-b dark:border-gray-700">
                             <button id="submitButton" type="submit"
-                                class="text-sm rounded px-5 py-2.5 shadow-md btn-primary-custom upload-picture-btn">
-                                Add SubAccount
+                                class="flex items-center justify-center text-sm rounded px-5 py-2.5 shadow-md btn-primary-custom upload-picture-btn relative">
+                                <span id="btnText">Add SubAccount</span>
+                                <svg id="btnLoader" class="hidden animate-spin ml-2 h-4 w-4 text-white"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+                                </svg>
                             </button>
-
                         </div>
                     </form>
                 </div>
@@ -179,57 +211,69 @@
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script>
-        $(document).ready(function() {
+
+        const btn = document.getElementById('submitButton');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+
+        btn.addEventListener('click', function () {
+            btnText.textContent = 'Processing...';
+            btnLoader.classList.remove('hidden');
+            btn.disabled = true; // prevent double click
+        });
+
+
+        $(document).ready(function () {
             let table = $('#searchtable').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
                     url: "{{ route('admin.subaccount.index') }}",
                     type: 'GET',
-                    error: function(xhr) {
+                    error: function (xhr) {
                         console.error("AJAX Load Error: ", xhr.responseText);
                     }
                 },
                 columns: [{
-                        data: 'id',
-                        name: 'id'
-                    },
-                    {
-                        data: 'name',
-                        name: 'name'
-                    },
-                    {
-                        data: 'email',
-                        name: 'email'
-                    },
-                    {
-                        data: 'status',
-                        name: 'status'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    },
+                    data: 'id',
+                    name: 'id'
+                },
+                {
+                    data: 'name',
+                    name: 'name'
+                },
+                {
+                    data: 'email',
+                    name: 'email'
+                },
+                {
+                    data: 'status',
+                    name: 'status'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                },
                 ]
             });
 
             // Trigger reload
-            $('body').on('change', function() {
+            $('body').on('change', function () {
                 table.ajax.reload();
             });
 
             // Form submission
             // Form submission
-            $("form#userForm").submit(function(event) {
+            $("form#userForm").submit(function (event) {
                 event.preventDefault();
                 const formData = $(this).serialize();
                 $.ajax({
                     url: "{{ route('admin.user.store') }}",
                     method: 'POST',
                     data: formData,
-                    success: function(response) {
+                    success: function (response) {
                         // Hide the correct modal
                         $('#authentication-modal').addClass('hidden');
 
@@ -241,13 +285,13 @@
                         // Remove modal overlay if necessary
                         $('.bg-gray-900\\/50, .bg-gray-900\\/80').remove();
                     },
-                    error: function(error) {
+                    error: function (error) {
                         console.error("Form Submit Error: ", error.responseText);
                     }
                 });
             });
             // Delete
-            $('body').on('click', '.confirm-delete', function(e) {
+            $('body').on('click', '.confirm-delete', function (e) {
                 e.preventDefault();
                 const userId = $(this).data('id');
                 const url = '{{ route('admin.user.destroy', ':id') }}'.replace(':id', userId);
@@ -259,10 +303,10 @@
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
-                        success: function(response) {
+                        success: function (response) {
                             table.ajax.reload(null, false);
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error("Delete Error: ", xhr.responseText);
                         }
                     });
@@ -270,7 +314,7 @@
             });
 
             // Status change
-            $('body').on('click', '.status_changes', function(e) {
+            $('body').on('click', '.status_changes', function (e) {
                 e.preventDefault();
                 const id = $(this).data('id');
                 console.log("Status change triggered for user ID:", id);
@@ -281,22 +325,22 @@
                     $.ajax({
                         type: "GET",
                         url: url,
-                        success: function(response) {
+                        success: function (response) {
                             console.log("Status updated successfully");
                             table.ajax.reload(null, false);
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error("Status Change Error:", xhr.responseText);
                         }
                     });
                 }
             });
-            $('body').on('click', '.editModelOpen', function(e) {
+            $('body').on('click', '.editModelOpen', function (e) {
                 $('#authentication-modal').removeClass('hidden');
             });
         });
 
-        function saveData(id, name, email, location_id) {
+        function saveData(id, name, email, manual_key, location_id) {
             const modal = document.getElementById('authentication-modal');
             const modalContent = modal.querySelector('.relative.p-4.w-full.max-w-lg');
             if (modalContent) {
@@ -309,6 +353,7 @@
             $('#user_id').val(id);
             $('#name').val(name);
             $('#email').val(email);
+            $('#manual_key').val(manual_key);
             $('#password').val('');
             $('#location_id').val(location_id);
             modal.classList.remove('hidden');
@@ -326,5 +371,23 @@
 
             $('body').css('overflow', 'auto');
         }
+    </script>
+
+    <script>
+        // Secure random hex string (24 bytes = 48 chars)
+        function secureHex(lenBytes = 24) {
+            const arr = new Uint8Array(lenBytes);
+            window.crypto.getRandomValues(arr);
+            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function regenerateKey() {
+            document.getElementById("manual_key").value = secureHex(24);
+        }
+
+        // Page load pe auto-generate
+        document.addEventListener("DOMContentLoaded", function () {
+            regenerateKey();
+        });
     </script>
 @endpush

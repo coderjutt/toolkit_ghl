@@ -8,10 +8,10 @@ class CustomMenuLink extends Model
 {
     protected $table ="custommenulink";
     protected $fillable =[
-        "Title","allowed_emails","restricted_email","action"
+        "Title","Url","restricted_email","action","user_id","checked"
     ];
     protected $casts=[
-          'allowed_emails' => 'array',
+        //   'allowed_emails' => 'array',
           'restricted_email' => 'array',
     ];
 }

@@ -4,16 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomCss;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Models\LocationCustomizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class LocationcustomizerController extends Controller
 {
     public function index()
     {
-        $locationcustomizer = LocationCustomizer::all();
+        $locationcustomizer = LocationCustomizer::where('user_id', login_id())->get();
         $userPermissions = UserPermission::where('user_id', auth()->id())
             ->get()
             ->groupBy('module')
@@ -25,30 +27,39 @@ class LocationcustomizerController extends Controller
     }
 
     public function store(Request $request)
-    {
+    {  
         $request->validate([
-            'location_id' => 'required|unique:location_customizer,location_id',
+            'location_id' => 'required',
             'location' => 'required',
             'Enable' => 'required|boolean',
         ]);
-
-        $location = LocationCustomizer::create($request->only('location_id', 'location', 'Enable'));
-
+            // dd($request->all());
+        $location = LocationCustomizer::create([
+            'location_id' => $request->location_id,
+            'location' => $request->location,
+            'Enable' => $request->Enable,
+            'user_id' => auth()->id(), // ✅ logged-in user ka id save hoga
+        ]);
 
         return redirect()->back()->with('success', 'Location added successfully.');
     }
 
     // Update location and related CustomCss
     public function update(Request $request, $id)
-    {
+    {    
         $location = LocationCustomizer::findOrFail($id);
 
+        if ($location->user_id !== auth()->id()) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
         $request->validate([
+            'location_id' => 'required',
             'location' => 'required',
             'Enable' => 'required|boolean',
         ]);
-
-        $location->update($request->only('location', 'Enable'));
+// dd($request->all());
+        $location->update($request->only('location','location_id', 'Enable'));
 
         return redirect()->back()->with('success', 'Location updated successfully.');
     }
@@ -57,6 +68,9 @@ class LocationcustomizerController extends Controller
     public function destroy($id)
     {
         $location = LocationCustomizer::findOrFail($id);
+        if ($location->user_id !== auth()->id()) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
         $location->delete();
         return redirect()->back()->with('success', 'Delete successfully');
     }
@@ -272,13 +286,13 @@ class LocationcustomizerController extends Controller
             ['location_customizer_id' => $location->id],
             [
                 'custom_css' => $customCssValue,
-                'form_css'   => $mergedFields
+                'form_css' => $mergedFields
             ]
         );
 
         return response()->json([
             'success' => true,
-            'data'    => $customCss
+            'data' => $customCss
         ]);
     }
 
@@ -308,37 +322,65 @@ class LocationcustomizerController extends Controller
         ]);
     }
 
-    public function getApiLocationCustomizer(Request $request, $email)
+    public function getApiLocationCustomizer(Request $request)
     {
-        // Step 1: User check
+       $email = $request->query('superadminemail');
+        $manualKey = $request->query('security_key');
+
+        // Step 1: Check manual key
+        if (!$manualKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Manual key is required'
+            ], 403);
+        }
+        // Step 2: User find
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found'], 404);
         }
 
-        // Step 2: Agar toggle ke liye data aya hai to update karo
-        $enableValue = $request->input('enable') ?? $request->input('Enable'); // case-insensitive handle
+        // Step 3: Get master key from settings
+        $masterKey = Setting::where('key', 'crm_master_key')->value('value');
+        if (!$masterKey) {
+            return response()->json(['success' => false, 'message' => 'Master key not configured'], 500);
+        }
+        // Step 4: Validate final key
+        $generatedFinalKey = $masterKey . $manualKey;
+        if (!Hash::check($generatedFinalKey, $user->final_key)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid manual key'
+            ], 403);
+        }
+
+        // ✅ Key is valid → now process location
+        $enableValue = $request->input('enable') ?? $request->input('Enable');
+
         if ($request->filled('id') && $enableValue !== null) {
-            $location = LocationCustomizer::find($request->id);
+            $location = LocationCustomizer::where('id', $request->id)
+                ->where('user_id', $user->id)
+                ->first();
 
             if (!$location) {
-                return response()->json(['success' => false, 'message' => 'Location not found'], 404);
+                return response()->json(['success' => false, 'message' => 'Location not found or not yours'], 404);
             }
 
-            $location->Enable = $enableValue;
+            $location->Enable = (bool) $enableValue;
             $location->save();
         }
 
-        // Step 3: Saare LocationCustomizer records fetch karo
-        $locationCustomizer = LocationCustomizer::all();
+        // Sirf us user ke locations
+        $locationCustomizer = LocationCustomizer::where('user_id', $user->id)->get();
 
-        // Step 4: Response return karo
         return response()->json([
             'success' => true,
             'data' => $locationCustomizer
         ]);
     }
 
+    
 
+    
 }
 

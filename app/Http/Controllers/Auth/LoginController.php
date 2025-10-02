@@ -52,10 +52,10 @@ class LoginController extends Controller
     protected function authenticated(Request $request, $user)
     {
         $allowedModules = UserPermission::where('user_id', $user->id)
-            ->pluck('module', 'permission')
+            ->pluck('module')
             ->unique()
             ->toArray();
-
+            //   dd($allowedModules);
 
         session()->forget('user_modules_' . $user->id);
         session()->put('user_modules_' . $user->id, $allowedModules);

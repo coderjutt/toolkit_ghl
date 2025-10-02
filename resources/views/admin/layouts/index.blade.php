@@ -49,6 +49,9 @@
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
         }
+        [x-cloak] {
+            display: none !important;
+        }
 
         .progress-bar-background-color {
             background: rgb(132 134 139);
@@ -146,11 +149,56 @@
             top: 11px;
             right: 1px;
             width: 20px;
+            
+        }
+        
+         .loader {
+            width: 64px;
+            height: 48px;
+            position: relative;
+            animation: split 1s ease-in infinite alternate;
+        }
+
+        .loader::before,
+        .loader::after {
+            content: '';
+            position: absolute;
+            height: 48px;
+            width: 48px;
+            border-radius: 50%;
+            left: 0;
+            top: 0;
+            transform: translateX(-10px);
+            background: #FF3D00;
+            opacity: 0.75;
+            backdrop-filter: blur(20px);
+        }
+
+        .loader::after {
+            left: auto;
+            right: 0;
+            background: #FFF;
+            transform: translateX(10px);
+        }
+
+        @keyframes split {
+
+            0%,
+            25% {
+                width: 64px
+            }
+
+            100% {
+                width: 148px
+            }
         }
     </style>
 </head>
 
 <body class="bg-gray-50 flex min-h-screen">
+     <div id="pageLoader" class="fixed inset-0 flex items-center justify-center bg-white z-[9999]">
+                <div class="loader"></div>
+            </div>
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay"></div>
 
@@ -165,10 +213,11 @@
 
             @yield('content')
             <!-- Footer -->
-            <footer class="text-center mt-8 pt-5 border-t border-gray-200">
+            <footer class=" fixed bottom-0 text-center mt-8 pt-5 w-full text-center py-3 shadow-md z-50 border-t border-gray-200">
                 <p class="text-gray-600">&copy; 2025{{ env('APP_NAME', 'Xortlogix Toolkit') }} . All rights reserved.
                 </p>
             </footer>
+            
         </div>
         @stack('scripts')
         <script src="{{ asset('/js/app.bundle.js') }}"></script>
@@ -196,6 +245,17 @@
                             navLinks.classList.add('hidden');
                         }
                     });
+                });
+            });
+        </script>
+        
+         <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Jab page DOM ready ho loader hata do
+                const loader = document.getElementById("pageLoader");
+                window.addEventListener("load", function () {
+                    loader.style.opacity = "0";
+                    setTimeout(() => loader.style.display = "none", 800); // smooth hide
                 });
             });
         </script>

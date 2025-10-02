@@ -4,6 +4,7 @@
             <i class="fas fa-bars"></i>
         </button>
         <h1 class="text-2xl font-bold text-navy">Dashboard Overview</h1>
+        <!-- <h1>pakisatn</h1> -->
     </div>
 
     <div class="header-right flex items-center w-full md:w-auto mt-4 md:mt-0">

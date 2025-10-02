@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -36,11 +38,11 @@ class SubAccountController extends Controller
 
     // UserController.php
 
-public function index(Request $request)
-{
+    public function index(Request $request)
+    {
 
     if ($request->ajax() || $request->wantsJson()) {
-        $data = User::select(['id', 'name', 'email', 'role', 'status',  'password','location_id'])
+        $data = User::select(['id', 'name', 'email', 'role', 'status','manual_key',  'password','location_id'])
         ->where('role', 2);
 
         return DataTables::of($data)
@@ -64,15 +66,16 @@ public function index(Request $request)
                         title="' . $title . '">' . $statusText . '</button>';
             })
          ->addColumn('action', function ($row) {
-    $id = $row->id;
-    $name = htmlspecialchars($row->name, ENT_QUOTES);
-    $email = htmlspecialchars($row->email, ENT_QUOTES);
-    $location_id = htmlspecialchars($row->location_id, ENT_QUOTES);
+            $id = $row->id;
+            $name = htmlspecialchars($row->name, ENT_QUOTES);
+            $email = htmlspecialchars($row->email, ENT_QUOTES);
+            $manual_key = htmlspecialchars($row->manual_key, ENT_QUOTES);
+            $location_id = htmlspecialchars($row->location_id, ENT_QUOTES);
 
     return '
         <div class="flex space-x-2">
                 <button
-                onclick="saveData(' . $id . ', \'' . $name . '\', \'' . $email . '\', \'' . $location_id . '\')"   class="editModelOpen block text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:hover:bg-blue-700 dark:focus:ring-blue-800" style="background-color: #001b4c;" type="button">
+                onclick="saveData(' . $id . ', \'' . $name . '\', \'' . $email . '\',\'' . $manual_key . '\', \'' . $location_id . '\')"   class="editModelOpen block text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:hover:bg-blue-700 dark:focus:ring-blue-800" style="background-color: #001b4c;" type="button">
                 Edit SubAccount
             </button>
             <a href="javascript:void(0);" data-id="' . $id . '"
@@ -97,7 +100,7 @@ public function index(Request $request)
 
     public function store(Request $req)
     {
-        //dd($req->all());
+        // dd($req->all());
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -117,6 +120,18 @@ public function index(Request $request)
             $validatedData['role'] = is_role() == 'superadmin' ? 2 : 3;
             $validatedData['added_by'] = auth()->id();
         }
+         if (!empty($req->manual_key)) {
+                $manualKey = $req->manual_key;
+                // $masterKey = env('MASTER_SSO_KEY');
+                $masterSetting = Setting::where('key', 'crm_master_key')->first();
+                $masterKey = $masterSetting ? $masterSetting->value : null;
+                //  dd($masterKey);
+                // Secure hash banate hain (non-reversible)
+                $finalKey = Hash::make($masterKey . $manualKey);
+
+                $validatedData['manual_key'] = $manualKey;
+                $validatedData['final_key'] = $finalKey;
+            }
         //dd($validatedData);
         // Save the user - update if the user already exists, or create a new one
         $user = User::updateOrCreate(['id' => $req->id], $validatedData);

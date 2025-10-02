@@ -3,8 +3,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RenameMenu;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class RenamemenuController extends Controller
 {
@@ -101,42 +103,71 @@ class RenamemenuController extends Controller
             'message' => 'Menu labels saved successfully',
         ]);
     }
-    public function renameGetApi($locationId)
-    {
-        // Step 1: Find user by location_id
-        $user = User::where('location_id', $locationId)->first();
+   public function renameGetApi(Request $request)
+{
+    $manualKey = $request->query('security_key');
+    $superAdminEmail = $request->query('superadminemail');
 
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found for this location ID',
-            ], 404);
-        }
+    if (!$manualKey || !$superAdminEmail) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Manual key and superadmin email are required',
+        ], 400);
+    }
 
-        // Step 2: Fetch RenameMenu entries for that user
-        $menus = RenameMenu::where('user_id', $user->id)->get(['old_menu', 'renamed_menu', 'image_url']);
+    // Step 1: Master key
+    $masterKey = Setting::where('key', 'crm_master_key')->value('value');
+    if (!$masterKey) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Master key not configured',
+        ], 500);
+    }
 
-        if ($menus->isEmpty()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'No renamed menus found',
-                'data'    => [],
-            ], 200);
-        }
+    // Step 2: Get user by superadmin email
+    $user = User::where('email', $superAdminEmail)->first();
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found',
+        ], 404);
+    }
 
-        // Step 3: Format output
-        $result = [];
-        foreach ($menus as $menu) {
-            $result[$menu->old_menu] = [
-                'label' => $menu->renamed_menu,
-                'image' => $menu->image_url,
-            ];
-        }
+    // Step 3: Validate final key
+    $generatedFinalKey = $masterKey . $manualKey;
+    if (!Hash::check($generatedFinalKey, $user->final_key)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid manual key',
+        ], 403);
+    }
 
+    // Step 4: Fetch RenameMenu entries for this user + their user_id
+    $menus = RenameMenu::where('user_id', $user->id)
+        ->orWhere('user_id', $request->query('user_id')) // optional: user_id ke behalf
+        ->get(['old_menu', 'renamed_menu', 'image_url']);
+
+    if ($menus->isEmpty()) {
         return response()->json([
             'success' => true,
-            'data'    => $result,
+            'message' => 'No renamed menus found',
+            'data'    => [],
         ], 200);
+    }
+
+    // Step 5: Format output
+    $result = [];
+    foreach ($menus as $menu) {
+        $result[$menu->old_menu] = [
+            'label' => $menu->renamed_menu,
+            'image' => $menu->image_url,
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'data'    => $result,
+    ], 200);
     }
 
 }

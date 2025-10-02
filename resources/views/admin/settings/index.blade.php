@@ -38,9 +38,24 @@
 
             @if (is_role() == 'super_admin')
                 <div class="col-span-12 xl:col-span-6 xl:col-start-4">
+
                     <div
                         class="p-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
                         <h3 class="mb-4 text-xl font-semibold dark:text-white"> CRM OAuth Information</h3>
+                        <div id="passwordModal"
+                            class="fixed inset-0 z-50 hidden items-center flex justify-center bg-black bg-opacity-50">
+                            <div class="bg-white rounded-lg p-6 w-96">
+                                <h3 class="text-lg font-semibold mb-4">Enter Password to Confirm</h3>
+                                <input type="password" id="passwordInput" class="w-full p-2 border rounded mb-4"
+                                    placeholder="Your password" />
+                                <p id="passwordError" class="text-red-500 text-sm mb-4 hidden">Incorrect password.</p>
+                                <div class="flex justify-end gap-2">
+                                    <button id="cancelPassword" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                    <button id="confirmPassword"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded">Confirm</button>
+                                </div>
+                            </div>
+                        </div>
                         <form method="POST" action="{{ route('admin.setting.save') }}">
                             @csrf
                             <div class="mb-4">
@@ -62,10 +77,22 @@
                                     <label for="first-name"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Client
                                         secret</label>
-                                    <input type="text" value="{{ $settings['crm_client_secret'] ?? '' }}"
-                                        id="crm_secret_id" name="setting[crm_client_secret]"
+                                    <input type="text" value="{{ $settings['crm_client_secret'] ?? '' }}" id="crm_secret_id"
+                                        name="setting[crm_client_secret]"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Client secret" required>
+                                </div>
+                            </div>
+                            <div class="mb-6">
+
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="first-name"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Master_Key
+                                    </label>
+                                    <input type="text" value="{{ $settings['crm_Master_key'] ?? '' }}" id="crm_Master_key"
+                                        name="setting[crm_Master_key]"
+                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        placeholder="Master Key" required>
                                 </div>
                             </div>
 
@@ -77,26 +104,28 @@
                     </div>
                 </div>
             @endif
-             @if (is_role() == 'admin')
-            <div class="col-span-12 sm:col-span-10 md:col-span-8 xl:col-span-6 xl:col-start-4">
-                <div
-                    class="flex flex-col sm:flex-row justify-between gap-4 w-full p-6 border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
+
+
+            @if (is_role() == 'admin')
+                <div class="col-span-12 sm:col-span-10 md:col-span-8 xl:col-span-6 xl:col-start-4">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between gap-4 w-full p-6 border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
                         <a href="{{ CRM::directConnect() }}"
                             class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
                             Connect {{ is_role() == 'super_admin' ? 'Agency' : 'Location' }}/CRM
                         </a>
-                    <button id="sync-location-data-btn"
-                        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
-                        Sync Location Data
-                    </button>
+                        <button id="sync-location-data-btn"
+                            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
+                            Sync Location Data
+                        </button>
+                    </div>
                 </div>
-            </div>
-              @endif
+            @endif
 
         </div>
- @if (is_role() == 'admin')
-        <div
-            class="grid grid-cols-12 mt-4 gap-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
+        @if (is_role() == 'admin')
+            <div
+                class="grid grid-cols-12 mt-4 gap-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
 
                 <div class="col-span-12 xl:col-span-6 xl:col-start-4">
                     <div
@@ -121,8 +150,9 @@
 
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="first-name"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Premium Goal</label>
-                                    <input type="text"  value="{{$policies['premium']  ?? ''}}" name="policies[premium]"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Premium
+                                        Goal</label>
+                                    <input type="text" value="{{$policies['premium'] ?? ''}}" name="policies[premium]"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Premium" required>
                                 </div>
@@ -136,7 +166,7 @@
                     </div>
                 </div>
 
-        </div>
+            </div>
         @endif
         @php
             $logo = App\Models\Setting::where('key', 'logo')->first();
@@ -164,7 +194,8 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
                         @endif
                     </div>
-                  <input id="dropzone-file" type="file" class="hidden" accept="image/png, image/jpeg, image/jpg, image/gif, image/svg+xml" />
+                    <input id="dropzone-file" type="file" class="hidden"
+                        accept="image/png, image/jpeg, image/jpg, image/gif, image/svg+xml" />
 
                 </label>
             </div>
@@ -177,108 +208,172 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+
+
     <script>
-        $(document).ready(function() {
-            $('#sync-location-data-btn').click(function() {
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.querySelector("form[action='{{ route('admin.setting.save') }}']");
+            const submitBtn = form.querySelector("button[type='submit']");
+
+            // Modal elements
+            const modal = document.getElementById("passwordModal");
+            const passwordInput = document.getElementById("passwordInput");
+            const passwordError = document.getElementById("passwordError");
+            const cancelBtn = document.getElementById("cancelPassword");
+            const confirmBtn = document.getElementById("confirmPassword");
+
+            submitBtn.addEventListener("click", function (e) {
+                e.preventDefault(); // Prevent original submit
+                passwordInput.value = "";
+                passwordError.classList.add("hidden");
+                modal.classList.remove("hidden"); // Show modal
+            });
+
+            cancelBtn.addEventListener("click", function () {
+                modal.classList.add("hidden"); // Close modal
+            });
+
+            confirmBtn.addEventListener("click", function () {
+                const enteredPassword = passwordInput.value.trim();
+                if (!enteredPassword) {
+                    passwordError.textContent = "Password is required.";
+                    passwordError.classList.remove("hidden");
+                    return;
+                }
+
+                // Check password via AJAX
+                fetch("{{ route('check.user.password') }}", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ password: enteredPassword })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            modal.classList.add("hidden"); // Hide modal
+                            form.submit(); // Submit original form
+                        } else {
+                            passwordError.textContent = "Incorrect password.";
+                            passwordError.classList.remove("hidden");
+                        }
+                    })
+                    .catch(err => {
+                        passwordError.textContent = "Error checking password.";
+                        passwordError.classList.remove("hidden");
+                        console.error(err);
+                    });
+            });
+        });
+    </script>
+
+    <script>
+
+
+        $(document).ready(function () {
+            $('#sync-location-data-btn').click(function () {
                 $('#custom-loader').css('display', 'flex'); // SHOW loader
 
                 $.ajax({
                     url: "{{ route('crm.syn.location.data') }}",
                     type: 'GET',
-                    success: function(response) {
+                    success: function (response) {
                         $('#custom-loader').css('display', 'flex'); // SHOW loader
                         toastr.success(response.message);
                     },
-                    error: function(xhr) {
+                    error: function (xhr) {
                         alert('Something went wrong. Please try again.');
                         console.log(xhr.responseText);
                     },
-                    complete: function() {
+                    complete: function () {
                         $('#custom-loader').hide(); // HIDE loader
                     }
                 });
             });
         });
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const dropzone = document.getElementById("dropzone");
-        const inputFile = document.getElementById("dropzone-file");
+        document.addEventListener("DOMContentLoaded", function () {
+            const dropzone = document.getElementById("dropzone");
+            const inputFile = document.getElementById("dropzone-file");
 
-        dropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            dropzone.classList.add("bg-gray-200");
-        });
-
-        dropzone.addEventListener("dragleave", () => {
-            dropzone.classList.remove("bg-gray-200");
-        });
-
-        dropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            dropzone.classList.remove("bg-gray-200");
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                uploadImage(files[0]);
-            }
-        });
-
-        inputFile.addEventListener("change", function () {
-            if (this.files.length > 0) {
-                uploadImage(this.files[0]);
-            }
-        });
-
-        function uploadImage(file) {
-            const formData = new FormData();
-            formData.append("image", file);
-
-            fetch("{{ route('admin.setting.saveLogo') }}", {
-                method: "POST",
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Upload failed');
-                return response.json();
-            })
-            .then(data => {
-                alert("Upload successful");
-                location.reload();
-            })
-            .catch(error => {
-                alert("Upload failed");
-                console.error(error);
-            });
-        }
-
-        // Optional: form submission override (if needed)
-        const form = document.querySelector("form[action='{{ route('admin.setting.save') }}']");
-        if (form) {
-            form.addEventListener("submit", function (e) {
+            dropzone.addEventListener("dragover", (e) => {
                 e.preventDefault();
+                dropzone.classList.add("bg-gray-200");
+            });
 
-                const formData = new FormData(form);
-                fetch(form.action, {
+            dropzone.addEventListener("dragleave", () => {
+                dropzone.classList.remove("bg-gray-200");
+            });
+
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("bg-gray-200");
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    uploadImage(files[0]);
+                }
+            });
+
+            inputFile.addEventListener("change", function () {
+                if (this.files.length > 0) {
+                    uploadImage(this.files[0]);
+                }
+            });
+
+            function uploadImage(file) {
+                const formData = new FormData();
+                formData.append("image", file);
+
+                fetch("{{ route('admin.setting.saveLogo') }}", {
                     method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    alert("Settings saved!");
-                    console.log(data);
-                })
-                .catch(error => {
-                    alert("Failed to save settings.");
-                    console.error(error);
+                    .then(response => {
+                        if (!response.ok) throw new Error('Upload failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        alert("Upload successful");
+                        location.reload();
+                    })
+                    .catch(error => {
+                        alert("Upload failed");
+                        console.error(error);
+                    });
+            }
+
+            // Optional: form submission override (if needed)
+            const form = document.querySelector("form[action='{{ route('admin.setting.save') }}']");
+            if (form) {
+                form.addEventListener("submit", function (e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(form);
+                    fetch(form.action, {
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert("Settings saved!");
+                            console.log(data);
+                        })
+                        .catch(error => {
+                            alert("Failed to save settings.");
+                            console.error(error);
+                        });
                 });
-            });
-        }
-    });
+            }
+        });
     </script>
 @endpush

@@ -219,7 +219,7 @@
              });
         });
 
-     function saveData(id, name, email, location_id) {
+     function saveData(id, name,manual_key, email, location_id) {
     const modal = document.getElementById('authentication-modal');
     const modalContent = modal.querySelector('.relative.p-4.w-full.max-w-lg');
     if (modalContent) {
@@ -232,6 +232,7 @@
     $('#user_id').val(id);
     $('#name').val(name);
     $('#email').val(email);
+    $('#manual_key').val(manual_key);
     $('#password').val('');
     $('#location_id').val(location_id);
     modal.classList.remove('hidden');

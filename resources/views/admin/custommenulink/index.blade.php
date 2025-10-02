@@ -1,64 +1,55 @@
 @extends('admin.layouts.index')
 
 @section('content')
-    @if(session('success'))
-        <div class="mb-4 px-4 py-3 rounded relative bg-green-100 border border-green-400 text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 px-4 py-3 rounded relative bg-red-100 border border-red-400 text-red-700">
-            {{ session('error') }}
-        </div>
-    @endif
+    <div x-data="customMenuManager()" class="max-w-7xl mx-auto px-4 py-6">
 
-    <div x-data="{ open: false, openEdit: false, editData: {} }" class="max-w-7xl mx-auto px-4 py-6">
-        @if(isset($userPermissions['Custommenulink']) && in_array('Add', $userPermissions['Custommenulink']))
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold">Custom Menu Links</h1>
-                <button @click="open=true" class="bg-blue-600 text-white px-4 py-2 rounded">
-                    + Add CustomMenuLink
-                </button>
+        <!-- Flash Messages -->
+        @if(session('success'))
+            <div class="mb-4 px-4 py-3 rounded bg-green-100 border border-green-400 text-green-700">
+                {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="mb-4 px-4 py-3 rounded bg-red-100 border border-red-400 text-red-700">
+                {{ session('error') }}
             </div>
         @endif
 
-        {{-- Table --}}
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Custom Menu Links</h1>
+            <button @click="openAdd=true" class="bg-blue-600 text-white px-4 py-2 rounded">+ Add CustomMenuLink</button>
+        </div>
+
+        <!-- Table -->
         <div class="bg-white shadow rounded-lg overflow-x-auto">
-          @if(isset($userPermissions['Custommenulink']) && in_array('List', $userPermissions['Custommenulink']))  
             <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
                 <thead class="bg-gray-100 text-left text-xs uppercase font-semibold text-gray-600">
                     <tr>
                         <th class="px-6 py-3">Title</th>
-                        <th class="px-6 py-3">Allowed Emails</th>
                         <th class="px-6 py-3">Restricted Emails</th>
                         <th class="px-6 py-3 text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white">
-                    @forelse($CMLink as $link)
+                    @foreach($CMLink as $link)
                         <tr>
                             <td class="px-6 py-4">{{ $link->Title }}</td>
                             <td class="px-6 py-4">
                                 @php
-                                    $allowed = is_string($link->allowed_emails) ? json_decode($link->allowed_emails, true) : $link->allowed_emails;
-                                @endphp
-                                @if(is_array($allowed))
-                                    {{ implode(', ', $allowed) }}
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                @php
-                                    $restricted = is_string($link->restricted_email) ? json_decode($link->restricted_email, true) : $link->restricted_email;
+                                    $restricted = is_string($link->restricted_email)
+                                        ? json_decode($link->restricted_email, true)
+                                        : $link->restricted_email;
                                 @endphp
                                 @if(is_array($restricted))
                                     {{ implode(', ', $restricted) }}
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
-                                @if(isset($userPermissions['Custommenulink']) && in_array('Edit', $userPermissions['Custommenulink']))
-                                    <button class="text-white bg-blue-600 px-3 py-1 rounde"
-                                        @click="openEdit = true; editData = {{ json_encode($link) }}">
-                                     <i class="far fa-edit" style="font-size:14px"></i>
+                                @if(isset($userPermissions['Custommenulink']) && in_array('Delete', $userPermissions['Custommenulink']))
+                                    <button class="text-white bg-blue-600 px-3 py-1 rounded"
+                                        @click="openUpdate=true; loadData({{ json_encode($link) }})">
+                                        Edit
                                     </button>
                                 @endif
                                 @if(isset($userPermissions['Custommenulink']) && in_array('Delete', $userPermissions['Custommenulink']))
@@ -73,221 +64,267 @@
                                 @endif
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-gray-500">No custom menu links found.</td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
-        @endif 
 
-        <!-- Add Modal -->
-        <div x-show="open" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div @click.away="open = false" class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
+        <!-- ADD Modal -->
+        <div x-show="openAdd" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">Add Custom Menu Link</h2>
 
-                <form id="customMenuForm" class="space-y-4">
-                    <!-- Title -->
+                <!-- Checkbox -->
+                <label class="inline-flex items-center mb-4">
+                    <input type="checkbox" x-model="formAdd.useTitleDropdown" class="form-checkbox text-blue-600">
+                    <span class="ml-2">Use Title Dropdown instead of Text + URL</span>
+                </label>
+                @php
+                    $titles = ['Dashboard', 'Reports', 'Settings'];
+                @endphp
+                <!-- Title Dropdown -->
+                <select x-show="formAdd.useTitleDropdown" x-model="formAdd.Title" class="w-full border rounded-lg p-2 mb-3">
+                    <option value="">-- Select Title --</option>
+                    @foreach ($titles as $title)
+                        <option value="{{ $title }}">{{ $title }}</option>
+                    @endforeach
+                </select>
+
+                <!-- Title + URL -->
+                <template x-if="!formAdd.useTitleDropdown">
                     <div>
                         <label class="block text-sm font-medium mb-1">Title</label>
-                        <input type="text" name="Title" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-300">
+                        <input type="text" x-model="formAdd.Title" class="w-full border rounded-lg p-2 mb-3">
+                        <label class="block text-sm font-medium mb-1">Url</label>
+                        <input type="text" x-model="formAdd.Url" class="w-full border rounded-lg p-2 mb-3">
                     </div>
+                </template>
 
-                    <!-- Allowed Emails -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Allowed Emails</label>
-                        <input id="allowed_emails" name="allowed_emails" placeholder="Enter emails"
-                            class="w-full border rounded-lg p-2">
-                    </div>
+                <!-- Restricted Emails -->
+                <label class="block text-sm font-medium mb-1">Restricted Emails</label>
+                <input id="add_restricted_email" type="text" class="w-full border rounded-lg p-2 mb-3">
 
-                    <!-- Restricted Emails -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Restricted Emails</label>
-                        <input id="restricted_email" name="restricted_email" placeholder="Enter emails"
-                            class="w-full border rounded-lg p-2">
-                    </div>
+                <!-- Action -->
+                <div x-show="!formAdd.useTitleDropdown">
+                    <label class="block text-sm font-medium mb-1">Action</label>
+                    <select x-model="formAdd.action" class="w-full border rounded-lg p-2 mb-4">
+                        <option value="new_tab">New Tab</option>
+                        <option value="same_tab">Same Tab</option>
+                        <option value="iframe">Iframe</option>
+                    </select>
+                </div>
 
-                    <!-- Action Dropdown -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Action</label>
-                        <select name="action" class="w-full border rounded-lg p-2">
-                            <option value="new_tab">New Tab</option>
-                            <option value="same_tab">Same Tab</option>
-                            <option value="iframe">Iframe</option>
-                        </select>
-                    </div>
-
-                    <!-- Buttons -->
-                    <div class="flex justify-end space-x-2 mt-4">
-                        <button type="button" @click="open = false"
-                            class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            Save
-                        </button>
-                    </div>
-                </form>
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-2">
+                    <button @click="openAdd=false"
+                        class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
+                    <button @click="submitAdd()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+                </div>
             </div>
         </div>
 
-        <!-- Update Modal -->
-        <div x-show="openEdit" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div @click.away="openEdit = false" class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
+        <!-- UPDATE Modal -->
+        <div x-show="openUpdate" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">Update Custom Menu Link</h2>
 
-                <form id="updateMenuForm" class="space-y-4">
-                    <input type="hidden" name="id" x-model="editData.id">
+                <!-- Checkbox -->
+                <label class="inline-flex items-center mb-4">
+                    <input type="checkbox" x-model="form.useTitleDropdownEdit" class="form-checkbox text-blue-600">
+                    <span class="ml-2">Use Title Dropdown instead of Text + URL</span>
+                </label>
 
-                    <!-- Title -->
+                <!-- Title Dropdown -->
+                <select x-show="form.useTitleDropdownEdit" x-model="form.Title" class="w-full border rounded-lg p-2 mb-3">
+                    <option value="">-- Select Title --</option>
+                    <option value="Dashboard">Dashboard</option>
+                    <option value="Reports">Reports</option>
+                    <option value="Settings">Settings</option>
+                </select>
+
+                <!-- Title + URL -->
+                <template x-if="!form.useTitleDropdownEdit">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Title</label>
-                        <input type="text" name="Title" x-model="editData.Title"
-                            class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-300">
-                    </div>
+                        <!-- Title + URL fields -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Title</label>
+                            <input type="text" x-model="form.Title" class="w-full border rounded-lg p-2 mb-3">
+                            <label class="block text-sm font-medium mb-1">Url</label>
+                            <input type="text" x-model="form.Url" class="w-full border rounded-lg p-2 mb-3">
+                        </div>
 
-                    <!-- Allowed Emails -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Allowed Emails</label>
-                        <input id="edit_allowed_emails" name="allowed_emails" class="w-full border rounded-lg p-2">
+                        <!-- Action dropdown -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Action</label>
+                            <select x-model="form.action" class="w-full border rounded-lg p-2 mb-4">
+                                <option value="new_tab">New Tab</option>
+                                <option value="same_tab">Same Tab</option>
+                                <option value="iframe">Iframe</option>
+                            </select>
+                        </div>
                     </div>
+                </template>
 
-                    <!-- Restricted Emails -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Restricted Emails</label>
-                        <input id="edit_restricted_email" name="restricted_email" class="w-full border rounded-lg p-2">
-                    </div>
 
-                    <!-- Action Dropdown -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Action</label>
-                        <select name="action" x-model="editData.action" class="w-full border rounded-lg p-2">
-                            <option value="new_tab">New Tab</option>
-                            <option value="same_tab">Same Tab</option>
-                            <option value="iframe">Iframe</option>
-                        </select>
-                    </div>
+                <!-- Restricted Emails -->
+                <label class="block text-sm font-medium mb-1">Restricted Emails</label>
+                <input id="edit_restricted_email" type="text" class="w-full border rounded-lg p-2 mb-3">
 
-                    <!-- Buttons -->
-                    <div class="flex justify-end space-x-2 mt-4">
-                        <button type="button" @click="openEdit = false"
-                            class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                            Update
-                        </button>
-                    </div>
-                </form>
+                <!-- Action -->
+
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-2">
+                    <button @click="openUpdate=false"
+                        class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
+                    <!-- <button @click="submitUpdate()"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Update</button>
+                    </div> -->
+
+                    <button @click="submitUpdate()"
+                        class="bg-green-600 text-white px-6 py-2 rounded flex items-center justify-center gap-2"
+                        onclick="this.querySelector('.spinner').classList.remove('hidden'); this.querySelector('.btn-text').classList.add('hidden');">
+                        <span class="btn-text">Update</span>
+                        <svg class="spinner hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                            fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                                  0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Include Tagify -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.17.9/tagify.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.17.9/tagify.css" />
+        <!-- Tagify -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.17.9/tagify.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.17.9/tagify.css" />
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Tagify for Add
-            let allowedTagify = new Tagify(document.querySelector("#allowed_emails"));
-            let restrictedTagify = new Tagify(document.querySelector("#restricted_email"));
+        <script>
+            function customMenuManager() {
+                let addRestrictedTagify, editRestrictedTagify;
+                const loader = document.getElementById("formLoader"); // loader reference
 
-            // Add submit
-            document.getElementById("customMenuForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                let formData = {
-                    Title: this.Title.value,
-                    allowed_emails: allowedTagify.value.map(tag => tag.value),
-                    restricted_email: restrictedTagify.value.map(tag => tag.value),
-                    action: this.action.value
-                };
-
-                let response = await fetch("{{ route('admin.custom-menu-links.store') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                return {
+                    openAdd: false,
+                    openUpdate: false,
+                    formAdd: {
+                        Title: '',
+                        Url: '',
+                        restricted_email: [],
+                        action: 'new_tab',
+                        useTitleDropdown: false,
                     },
-                    body: JSON.stringify(formData)
-                });
-
-                let result = await response.json();
-                if (result.success) {
-                    alert("Saved successfully!");
-                    location.reload();
-                } else {
-                    alert("Error saving data");
-                }
-            });
-
-            // Tagify for Edit
-            let editAllowedTagify = new Tagify(document.querySelector("#edit_allowed_emails"));
-            let editRestrictedTagify = new Tagify(document.querySelector("#edit_restricted_email"));
-
-            // Update submit
-            document.getElementById("updateMenuForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                let id = this.id.value;
-                let formData = {
-                    Title: this.Title.value,
-                    allowed_emails: editAllowedTagify.value.map(tag => tag.value),
-                    restricted_email: editRestrictedTagify.value.map(tag => tag.value),
-                    action: this.action.value
-                };
-
-                let response = await fetch("{{ url('admin/custom-menu-links') }}/" + id, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    form: {
+                        id: null,
+                        Title: '',
+                        Url: '',
+                        restricted_email: [],
+                        action: 'new_tab',
+                        useTitleDropdownEdit: false,
                     },
-                    body: JSON.stringify(formData)
-                });
+                    init() {
+                        addRestrictedTagify = new Tagify(document.querySelector("#add_restricted_email"), {
+                            delimiters: " ,",
+                        });
 
-                let result = await response.json();
-                if (result.success) {
-                    alert("Updated successfully!");
-                    location.reload();
-                } else {
-                    alert("Error updating data");
-                }
-            });
+                        editRestrictedTagify = new Tagify(document.querySelector("#edit_restricted_email"), {
+                            delimiters: " ,",
+                        });
+                    },
 
-            // Prefill edit Tagify
-            document.addEventListener("click", function (e) {
-                if (e.target.closest("button.text-white.bg-blue-600")) {
-                    let raw = e.target.closest("button").getAttribute("@click");
-                    let data = JSON.parse(raw.split("editData = ")[1]);
+                    submitAdd() {
+                        this.formAdd.restricted_email = addRestrictedTagify.value.map(tag => tag.value);
 
-                    editAllowedTagify.removeAllTags();
-                    editRestrictedTagify.removeAllTags();
+                        loader.classList.remove("hidden"); // loader show
 
-                    if (data.allowed_emails) {
-                        let allowed = Array.isArray(data.allowed_emails)
-                            ? data.allowed_emails
-                            : typeof data.allowed_emails === "string"
-                                ? (data.allowed_emails.startsWith("[") ? JSON.parse(data.allowed_emails) : data.allowed_emails.split(","))
-                                : [];
-                        editAllowedTagify.addTags(allowed);
-                    }
+                        fetch("{{ route('admin.custom-menu-links.store') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                            },
+                            body: JSON.stringify(this.formAdd)
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                loader.classList.add("hidden"); // loader hide
+                                if (data.success) {
+                                  
+                                    this.openAdd = false;
+                                    window.location.reload();
+                                }
+                            })
+                            .catch(() => loader.classList.add("hidden")); // error case
+                    },
 
-                    if (data.restricted_email) {
-                        let restricted = Array.isArray(data.restricted_email)
-                            ? data.restricted_email
-                            : typeof data.restricted_email === "string"
-                                ? (data.restricted_email.startsWith("[") ? JSON.parse(data.restricted_email) : data.restricted_email.split(","))
-                                : [];
-                        editRestrictedTagify.addTags(restricted);
+                    loadData(link) {
+                        this.form.id = link.id;
+                        this.form.Title = link.Title;
+                        this.form.Url = link.Url;
+                        this.form.restricted_email = Array.isArray(link.restricted_email)
+                            ? link.restricted_email
+                            : JSON.parse(link.restricted_email || "[]");
+                        this.form.action = link.action ?? 'new_tab';
+                        this.form.useTitleDropdownEdit = (link.Url === null);
+
+                        editRestrictedTagify.removeAllTags();
+                        editRestrictedTagify.addTags(this.form.restricted_email);
+                    },
+
+                    submitUpdate() {
+                        this.form.restricted_email = editRestrictedTagify.value.map(tag => tag.value);
+
+                        loader.classList.remove("hidden"); // loader show
+
+                        fetch(`/admin/custom-menu-links/${this.form.id}`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                            },
+                            body: JSON.stringify(this.form)
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                loader.classList.add("hidden"); // loader hide
+                                if (data.success) {
+                                   
+                                    this.openUpdate = false;
+                                    window.location.reload();
+                                }
+                            })
+                            .catch(() => loader.classList.add("hidden")); // error case
                     }
                 }
+            }
+      
+      </script>
+
+
+        <div id="formLoader" class="fixed inset-0 bg-gray-800 bg-opacity-60 flex items-center justify-center z-50 hidden">
+            <div class="flex flex-col items-center">
+                <svg class="animate-spin h-10 w-10 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 
+                                                                0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span class="text-white text-lg">Saving...</span>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const loader = document.getElementById("formLoader");
+
+                // Har form ke liye listener lagao
+                document.querySelectorAll("form").forEach(form => {
+                    form.addEventListener("submit", function () {
+                        loader.classList.remove("hidden"); // loader show
+                    });
+                });
             });
-        });
-    </script>
+        </script>
 @endsection

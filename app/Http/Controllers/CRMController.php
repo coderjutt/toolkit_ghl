@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CRM;
 use Illuminate\Http\Request;
 use App\Models\GhlAuth;
 use App\Models\Pipeline;
@@ -12,7 +13,7 @@ class CRMController extends Controller
     public function crmCallback(Request $request)
     {
         $code = $request->code ?? null;
-        //dd($code);
+        // dd($code);
         if ($code) {
             $user_id = null;
             if (auth()->check()) {
@@ -22,16 +23,16 @@ class CRMController extends Controller
                 // }
                 $user_id = $user->id;
             }
-            $code = \CRM::crm_token($code, '');
-            //dd($code);
+            $code = CRM::crm_token($code, '');
+            // dd(vars: $code);
             $code = json_decode($code);
             $user_type = $code->userType ?? null;
-            //dd($user_type,$user_id);
+            // dd($user_type,$user_id);
             $main = route('admin.setting.index'); //change with any desired
             if ($user_type) {
                 $token = $user->ghlauth ?? null;
 
-                list($connected, $con) = \CRM::go_and_get_token($code, '', $user_id, $token);
+                list($connected, $con) = CRM::go_and_get_token($code, '', $user_id, $token);
                 //dd($con);
                 if ($connected) {
                     return redirect($main)->with('success', 'Connected Successfully');

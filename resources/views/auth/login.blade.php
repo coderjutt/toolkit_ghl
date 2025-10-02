@@ -153,12 +153,12 @@
 
           <!-- Remember and Forgot -->
           <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-600">
-            <div class="flex items-center">
+            <!-- <div class="flex items-center">
               <input id="remember-me" type="checkbox" name="remember"
                 class="h-4 w-4 border-gray-300 rounded focus:ring-gold text-gold"
                 {{ old('remember') ? 'checked' : '' }} />
               <label for="remember-me" class="ml-2">Remember Me</label>
-            </div>
+            </div> -->
             <a href="#" class="text-gold hover:text-navy-light font-medium hover:underline">Forgot your password?</a>
           </div>
 
@@ -173,42 +173,42 @@
       </div>
 
       <!-- Content Section -->
-      <div class="max-md:mt-8">
-        <div class="bg-gradient-to-br from-navy to-navy-light rounded-2xl p-8 text-white h-full relative overflow-hidden">
+      <div class="max-md:mt-8 ">
+        <div class="bg-[#F5FFFA] from-navy to-navy-light rounded-2xl p-8 navy-text h-full relative overflow-hidden">
           <div class="relative z-10">
             <h2 class="text-3xl font-bold mb-4">Welcome to {{ env('APP_NAME','Xortlogix Toolkit') }}</h2>
-            <p class="text-gray-200 mb-8 max-w-md">
-              Access your personalized analytics, metrics, and business insights in one powerful platform designed for growth and efficiency.
+            <p class="text-gray-1000 mb-8 max-w-md">
+            Your personal business hub for tracking progress, unlocking insights, and managing everything that matters — all in one simple dashboard.
             </p>
 
             <div class="space-y-6">
               <div class="flex items-start">
                 <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-chart-pie"></i>
+                  <i class="fas fa-bolt text-blue-600"></i>
                 </div>
                 <div>
-                  <h3 class="font-semibold text-lg mb-1">Advanced Analytics</h3>
-                  <p class="text-gray-300 text-sm">Track performance with real-time data visualization</p>
+                  <h3 class="font-semibold text-lg mb-1">Seamless Integrations</h3>
+                  <p class="text-gray-1000 text-sm">Connect your tools and streamline workflows effortlessly</p>
                 </div>
               </div>
 
               <div class="flex items-start">
                 <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-shield-alt"></i>
+                  <i class="text-blue-600 fas fa-sliders-h"></i>
                 </div>
                 <div>
-                  <h3 class="font-semibold text-lg mb-1">Secure Platform</h3>
-                  <p class="text-gray-300 text-sm">Enterprise-grade security for your sensitive data</p>
+                  <h3 class="font-semibold text-lg mb-1">Smart Management</h3>
+                  <p class="text-gray-1000 text-sm">Secure keys, optimized sessions, and smooth navigation with spinners and conditions.</p>
                 </div>
               </div>
 
               <div class="flex items-start">
-                <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-bolt"></i>
+                <div class="feature-icon text-blue-600 mr-4 mt-1">
+                  <i class="text-blue-600 fas fa-chart-line"></i>
                 </div>
                 <div>
-                  <h3 class="font-semibold text-lg mb-1">Fast & Responsive</h3>
-                  <p class="text-gray-300 text-sm">Optimized for speed and seamless user experience</p>
+                  <h3 class="font-semibold text-lg mb-1">Insightful Dashboard</h3>
+                  <p class="text-gray-1000 text-sm">Gain clarity with data-driven decisions</p>
                 </div>
               </div>
             </div>
